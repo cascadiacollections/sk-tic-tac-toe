@@ -54,6 +54,7 @@
 		0BD7A1F32C17A6B600378A1D /* tictactoe_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = tictactoe_macOS.entitlements; sourceTree = "<group>"; };
 		0BD7A20C2C17E56D00378A1D /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
 		0BD7A2112C17E5A300378A1D /* libswiftUIKit.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libswiftUIKit.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/usr/lib/swift/libswiftUIKit.tbd; sourceTree = DEVELOPER_DIR; };
+		0BD7A2122C18021E00378A1D /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +85,7 @@
 		0BD7A1BB2C17A6B400378A1D = {
 			isa = PBXGroup;
 			children = (
+				0BD7A2122C18021E00378A1D /* .gitignore */,
 				0BD7A1C02C17A6B400378A1D /* tictactoe Shared */,
 				0BD7A1CB2C17A6B600378A1D /* tictactoe iOS */,
 				0BD7A1DB2C17A6B600378A1D /* tictactoe tvOS */,

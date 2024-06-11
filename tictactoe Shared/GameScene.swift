@@ -5,7 +5,8 @@ class GameScene: SKScene {
     fileprivate var board: [[SKSpriteNode?]] = [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
     fileprivate var boardState: [[Int]] = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
     fileprivate var currentPlayer = 1 // 1 for 'X', 2 for 'O'
-    
+    fileprivate var numColumns: CGFloat = 3
+
     class func newGameScene() -> GameScene {
         guard let scene = SKScene(fileNamed: "GameScene") as? GameScene else {
             print("Failed to load GameScene.sks")
@@ -38,9 +39,9 @@ class GameScene: SKScene {
     }
     
     fileprivate func drawBoard() {
-        let cellSize = min(size.width, size.height) / 3
-        let boardWidth = cellSize * 3
-        let boardHeight = cellSize * 3
+        let cellSize = min(size.width, size.height) / numColumns
+        let boardWidth = cellSize * numColumns
+        let boardHeight = cellSize * numColumns
         let xOffset = -boardWidth / 2
         let yOffset = -boardHeight / 2
         
@@ -90,7 +91,7 @@ class GameScene: SKScene {
         if boardState[row][col] == 0 {
             let symbol = currentPlayer == 1 ? "❌" : "⭕"
             let label = SKLabelNode(text: symbol)
-            label.fontSize = 80
+            label.fontSize = 240
             board[row][col]?.addChild(label)
             boardState[row][col] = currentPlayer
             
