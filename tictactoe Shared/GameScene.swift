@@ -34,11 +34,10 @@ class GameScene: SKScene {
     }
     
     override func didMove(to view: SKView) {
-        backgroundColor = SKColor.white
         drawBoard()
     }
     
-    func drawBoard() {
+    fileprivate func drawBoard() {
         let cellSize = min(size.width, size.height) / 3
         let boardWidth = cellSize * 3
         let boardHeight = cellSize * 3
@@ -57,7 +56,7 @@ class GameScene: SKScene {
         }
     }
     
-    func resetBoard() {
+    fileprivate func resetBoard() {
         for row in 0..<3 {
             for col in 0..<3 {
                 board[row][col]?.removeAllChildren()
@@ -67,7 +66,7 @@ class GameScene: SKScene {
         currentPlayer = 1
     }
     
-    func checkWin() -> Int {
+    fileprivate func checkWin() -> Int {
         // Check rows and columns
         for i in 0..<3 {
             if boardState[i][0] != 0 && boardState[i][0] == boardState[i][1] && boardState[i][1] == boardState[i][2] {
@@ -92,22 +91,22 @@ class GameScene: SKScene {
             let symbol = currentPlayer == 1 ? "❌" : "⭕"
             let label = SKLabelNode(text: symbol)
             label.fontSize = 80
-            label.fontColor = currentPlayer == 1 ? SKColor.red : SKColor.blue
             board[row][col]?.addChild(label)
             boardState[row][col] = currentPlayer
+            
+            if let sound = NSSound(named: NSSound.Name("Pop")) {
+                sound.play()
+            }
+            
             if checkWin() != 0 {
                 print("Player \(currentPlayer) wins!")
-                playWinSound()
+                if let sound = NSSound(named: NSSound.Name("Glass")) {
+                    sound.play()
+                }
                 resetBoard()
             } else {
                 currentPlayer = currentPlayer == 1 ? 2 : 1
             }
-        }
-    }
-
-    func playWinSound() {
-        if let sound = NSSound(named: NSSound.Name("Glass")) {
-            sound.play()
         }
     }
 }
