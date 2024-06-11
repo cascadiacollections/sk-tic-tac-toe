@@ -1,125 +1,113 @@
-//
-//  GameScene.swift
-//  tictactoe Shared
-//
-//  Created by Kevin T. Coughlin on 6/10/24.
-//
-
 import SpriteKit
+import AppKit
 
 class GameScene: SKScene {
-    
-    
-    fileprivate var label : SKLabelNode?
-    fileprivate var spinnyNode : SKShapeNode?
-
+    fileprivate var board: [[SKSpriteNode?]] = [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
+    fileprivate var boardState: [[Int]] = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    fileprivate var currentPlayer = 1 // 1 for 'X', 2 for 'O'
     
     class func newGameScene() -> GameScene {
-        // Load 'GameScene.sks' as an SKScene.
         guard let scene = SKScene(fileNamed: "GameScene") as? GameScene else {
             print("Failed to load GameScene.sks")
             abort()
         }
-        
-        // Set the scale mode to scale to fit the window
+
         scene.scaleMode = .aspectFill
         
         return scene
     }
     
-    func setUpScene() {
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
-        }
+    override func mouseDown(with event: NSEvent) {
+        let location = event.location(in: self)
+        let nodesAtPoint = self.nodes(at: location)
         
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
-        
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 4.0
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(Double.pi), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
+        for node in nodesAtPoint {
+            if let nodeName = node.name, nodeName.contains("-") {
+                let coordinates = nodeName.split(separator: "-").compactMap { Int($0) }
+                if coordinates.count == 2 {
+                    let row = coordinates[0]
+                    let col = coordinates[1]
+                    makeMove(row: row, col: col)
+                }
+            }
         }
     }
     
     override func didMove(to view: SKView) {
-        self.setUpScene()
-    }
-
-    func makeSpinny(at pos: CGPoint, color: SKColor) {
-        if let spinny = self.spinnyNode?.copy() as! SKShapeNode? {
-            spinny.position = pos
-            spinny.strokeColor = color
-            self.addChild(spinny)
-        }
+        backgroundColor = SKColor.white
+        drawBoard()
     }
     
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
-    }
-}
-
-#if os(iOS) || os(tvOS)
-// Touch-based event handling
-extension GameScene {
-
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
-        }
+    func drawBoard() {
+        let cellSize = min(size.width, size.height) / 3
+        let boardWidth = cellSize * 3
+        let boardHeight = cellSize * 3
+        let xOffset = -boardWidth / 2
+        let yOffset = -boardHeight / 2
         
-        for t in touches {
-            self.makeSpinny(at: t.location(in: self), color: SKColor.green)
+        for row in 0..<3 {
+            for col in 0..<3 {
+                let cell = SKSpriteNode(color: SKColor.gray, size: CGSize(width: cellSize - 10, height: cellSize - 10))
+                cell.position = CGPoint(x: xOffset + CGFloat(col) * cellSize + cellSize / 2,
+                                        y: yOffset + CGFloat(row) * cellSize + cellSize / 2)
+                cell.name = "\(row)-\(col)"
+                addChild(cell)
+                board[row][col] = cell
+            }
         }
     }
     
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches {
-            self.makeSpinny(at: t.location(in: self), color: SKColor.blue)
+    func resetBoard() {
+        for row in 0..<3 {
+            for col in 0..<3 {
+                board[row][col]?.removeAllChildren()
+                boardState[row][col] = 0
+            }
         }
+        currentPlayer = 1
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches {
-            self.makeSpinny(at: t.location(in: self), color: SKColor.red)
+    func checkWin() -> Int {
+        // Check rows and columns
+        for i in 0..<3 {
+            if boardState[i][0] != 0 && boardState[i][0] == boardState[i][1] && boardState[i][1] == boardState[i][2] {
+                return boardState[i][0]
+            }
+            if boardState[0][i] != 0 && boardState[0][i] == boardState[1][i] && boardState[1][i] == boardState[2][i] {
+                return boardState[0][i]
+            }
         }
+        // Check diagonals
+        if boardState[0][0] != 0 && boardState[0][0] == boardState[1][1] && boardState[1][1] == boardState[2][2] {
+            return boardState[0][0]
+        }
+        if boardState[0][2] != 0 && boardState[0][2] == boardState[1][1] && boardState[1][1] == boardState[2][0] {
+            return boardState[0][2]
+        }
+        return 0
     }
     
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches {
-            self.makeSpinny(at: t.location(in: self), color: SKColor.red)
+    func makeMove(row: Int, col: Int) {
+        if boardState[row][col] == 0 {
+            let symbol = currentPlayer == 1 ? "❌" : "⭕"
+            let label = SKLabelNode(text: symbol)
+            label.fontSize = 80
+            label.fontColor = currentPlayer == 1 ? SKColor.red : SKColor.blue
+            board[row][col]?.addChild(label)
+            boardState[row][col] = currentPlayer
+            if checkWin() != 0 {
+                print("Player \(currentPlayer) wins!")
+                playWinSound()
+                resetBoard()
+            } else {
+                currentPlayer = currentPlayer == 1 ? 2 : 1
+            }
         }
     }
-    
-   
+
+    func playWinSound() {
+        if let sound = NSSound(named: NSSound.Name("Glass")) {
+            sound.play()
+        }
+    }
 }
-#endif
-
-#if os(OSX)
-// Mouse-based event handling
-extension GameScene {
-
-    override func mouseDown(with event: NSEvent) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
-        }
-        self.makeSpinny(at: event.location(in: self), color: SKColor.green)
-    }
-    
-    override func mouseDragged(with event: NSEvent) {
-        self.makeSpinny(at: event.location(in: self), color: SKColor.blue)
-    }
-    
-    override func mouseUp(with event: NSEvent) {
-        self.makeSpinny(at: event.location(in: self), color: SKColor.red)
-    }
-
-}
-#endif
-

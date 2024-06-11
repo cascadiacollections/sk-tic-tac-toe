@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 73;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -52,6 +52,8 @@
 		0BD7A1EE2C17A6B600378A1D /* GameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewController.swift; sourceTree = "<group>"; };
 		0BD7A1F12C17A6B600378A1D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		0BD7A1F32C17A6B600378A1D /* tictactoe_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = tictactoe_macOS.entitlements; sourceTree = "<group>"; };
+		0BD7A20C2C17E56D00378A1D /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
+		0BD7A2112C17E5A300378A1D /* libswiftUIKit.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libswiftUIKit.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/usr/lib/swift/libswiftUIKit.tbd; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +89,7 @@
 				0BD7A1DB2C17A6B600378A1D /* tictactoe tvOS */,
 				0BD7A1EB2C17A6B600378A1D /* tictactoe macOS */,
 				0BD7A1CA2C17A6B600378A1D /* Products */,
+				0BD7A20B2C17E56D00378A1D /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -142,6 +145,15 @@
 				0BD7A1F32C17A6B600378A1D /* tictactoe_macOS.entitlements */,
 			);
 			path = "tictactoe macOS";
+			sourceTree = "<group>";
+		};
+		0BD7A20B2C17E56D00378A1D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0BD7A2112C17E5A300378A1D /* libswiftUIKit.tbd */,
+				0BD7A20C2C17E56D00378A1D /* UIKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -220,7 +232,6 @@
 				};
 			};
 			buildConfigurationList = 0BD7A1BF2C17A6B400378A1D /* Build configuration list for PBXProject "tictactoe" */;
-			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -228,6 +239,7 @@
 				Base,
 			);
 			mainGroup = 0BD7A1BB2C17A6B400378A1D;
+			preferredProjectObjectVersion = 73;
 			productRefGroup = 0BD7A1CA2C17A6B600378A1D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -477,6 +489,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6Z272MG2U9;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -507,6 +520,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6Z272MG2U9;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.board-games";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
