@@ -102,13 +102,18 @@ class GameScene: SKScene {
     func makeMove(row: Int, col: Int) {
         guard boardState[row][col] == 0 else { return }
 
-        let label = SKLabelNode(text: currentPlayer.symbol)
-        label.fontSize = 240
-        board[row][col]?.addChild(label)
+        if let tile = board[row][col] {
+            let label = SKLabelNode(text: currentPlayer.symbol)
+            label.fontSize = tile.frame.size.height * 0.8  // Set font size relative to tile size
+            label.horizontalAlignmentMode = .center
+            label.verticalAlignmentMode = .center
+            label.position = CGPoint(x: 0, y: 0)  // Center the label
+            tile.addChild(label)
+        }
+        
         boardState[row][col] = currentPlayer.rawValue
-
         playSound(named: "Pop")
-
+        
         if checkWin() != 0 {
             print("Player \(currentPlayer.rawValue) wins!")
             playSound(named: "Glass")
