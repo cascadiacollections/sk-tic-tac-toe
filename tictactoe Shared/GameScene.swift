@@ -6,6 +6,8 @@ class GameScene: SKScene {
     fileprivate var board: [[SKSpriteNode?]] = Array(repeating: Array(repeating: nil, count: 3), count: 3)
     fileprivate var boardState: [[Int]] = Array(repeating: Array(repeating: 0, count: 3), count: 3)
     fileprivate var currentPlayer: Player = .x
+    fileprivate var popSound: NSSound?
+    fileprivate var winSound: NSSound?
     
     enum Player: Int {
         case x = 1
@@ -46,14 +48,16 @@ class GameScene: SKScene {
 
     override func didMove(to view: SKView) {
         drawBoard()
+        
+        // Preload sounds to avoid creating them repeatedly
+        popSound = NSSound(named: NSSound.Name("Pop"))
+        winSound = NSSound(named: NSSound.Name("Glass"))
     }
 
     fileprivate func drawBoard() {
         let cellSize = min(size.width, size.height) / CGFloat(boardSize)
-        let boardWidth = cellSize * CGFloat(boardSize)
-        let boardHeight = cellSize * CGFloat(boardSize)
-        let xOffset = -boardWidth / 2
-        let yOffset = -boardHeight / 2
+        let xOffset = -cellSize * CGFloat(boardSize) / 2
+        let yOffset = -cellSize * CGFloat(boardSize) / 2
 
         for row in 0..<boardSize {
             for col in 0..<boardSize {
@@ -70,7 +74,9 @@ class GameScene: SKScene {
     fileprivate func resetBoard() {
         for row in 0..<boardSize {
             for col in 0..<boardSize {
-                board[row][col]?.removeAllChildren()
+                if let label = board[row][col]?.childNode(withName: "label") as? SKLabelNode {
+                    label.removeFromParent()  // Remove only labels
+                }
                 boardState[row][col] = 0
             }
         }
@@ -103,32 +109,36 @@ class GameScene: SKScene {
         guard boardState[row][col] == 0 else { return }
 
         if let tile = board[row][col] {
-            let label = SKLabelNode(text: currentPlayer.symbol)
-            label.fontSize = tile.frame.size.height * 0.8  // Set font size relative to tile size
-            label.horizontalAlignmentMode = .center
-            label.verticalAlignmentMode = .center
-            label.position = CGPoint(x: 0, y: 0)  // Center the label
-            tile.addChild(label)
+            if let label = tile.childNode(withName: "label") as? SKLabelNode {
+                label.text = currentPlayer.symbol  // Update the existing label
+            } else {
+                let label = SKLabelNode(text: currentPlayer.symbol)
+                label.name = "label"
+                label.fontSize = tile.frame.size.height * 0.8  // Set font size relative to tile size
+                label.horizontalAlignmentMode = .center
+                label.verticalAlignmentMode = .center
+                label.position = CGPoint(x: 0, y: 0)  // Center the label
+                tile.addChild(label)
+            }
         }
         
         boardState[row][col] = currentPlayer.rawValue
-        playSound(named: "Pop")
+        playSound(popSound)
         
         if checkWin() != 0 {
             print("Player \(currentPlayer.rawValue) wins!")
-            playSound(named: "Glass")
+            playSound(winSound)
             resetBoard()
         } else {
             currentPlayer = currentPlayer.next
         }
     }
 
-    fileprivate func playSound(named soundName: String) {
-        if let sound = NSSound(named: NSSound.Name(soundName)) {
-            if sound.isPlaying {
-                sound.stop()
-            }
-            sound.play()
+    fileprivate func playSound(_ sound: NSSound?) {
+        guard let sound = sound else { return }
+        if sound.isPlaying {
+            sound.stop()
         }
+        sound.play()
     }
 }
