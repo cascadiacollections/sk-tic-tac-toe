@@ -2,10 +2,23 @@ import SpriteKit
 import AppKit
 
 class GameScene: SKScene {
-    fileprivate var board: [[SKSpriteNode?]] = [[nil, nil, nil], [nil, nil, nil], [nil, nil, nil]]
-    fileprivate var boardState: [[Int]] = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-    fileprivate var currentPlayer = 1 // 1 for 'X', 2 for 'O'
-    fileprivate var numColumns: CGFloat = 3
+    fileprivate let boardSize = 3
+    fileprivate var board: [[SKSpriteNode?]] = Array(repeating: Array(repeating: nil, count: 3), count: 3)
+    fileprivate var boardState: [[Int]] = Array(repeating: Array(repeating: 0, count: 3), count: 3)
+    fileprivate var currentPlayer: Player = .x
+    
+    enum Player: Int {
+        case x = 1
+        case o = 2
+        
+        var symbol: String {
+            return self == .x ? "❌" : "⭕"
+        }
+        
+        var next: Player {
+            return self == .x ? .o : .x
+        }
+    }
 
     class func newGameScene() -> GameScene {
         guard let scene = SKScene(fileNamed: "GameScene") as? GameScene else {
@@ -14,39 +27,36 @@ class GameScene: SKScene {
         }
 
         scene.scaleMode = .aspectFill
-        
         return scene
     }
-    
+
     override func mouseDown(with event: NSEvent) {
         let location = event.location(in: self)
         let nodesAtPoint = self.nodes(at: location)
-        
+
         for node in nodesAtPoint {
             if let nodeName = node.name, nodeName.contains("-") {
                 let coordinates = nodeName.split(separator: "-").compactMap { Int($0) }
                 if coordinates.count == 2 {
-                    let row = coordinates[0]
-                    let col = coordinates[1]
-                    makeMove(row: row, col: col)
+                    makeMove(row: coordinates[0], col: coordinates[1])
                 }
             }
         }
     }
-    
+
     override func didMove(to view: SKView) {
         drawBoard()
     }
-    
+
     fileprivate func drawBoard() {
-        let cellSize = min(size.width, size.height) / numColumns
-        let boardWidth = cellSize * numColumns
-        let boardHeight = cellSize * numColumns
+        let cellSize = min(size.width, size.height) / CGFloat(boardSize)
+        let boardWidth = cellSize * CGFloat(boardSize)
+        let boardHeight = cellSize * CGFloat(boardSize)
         let xOffset = -boardWidth / 2
         let yOffset = -boardHeight / 2
-        
-        for row in 0..<3 {
-            for col in 0..<3 {
+
+        for row in 0..<boardSize {
+            for col in 0..<boardSize {
                 let cell = SKSpriteNode(color: SKColor.gray, size: CGSize(width: cellSize - 10, height: cellSize - 10))
                 cell.position = CGPoint(x: xOffset + CGFloat(col) * cellSize + cellSize / 2,
                                         y: yOffset + CGFloat(row) * cellSize + cellSize / 2)
@@ -56,64 +66,64 @@ class GameScene: SKScene {
             }
         }
     }
-    
+
     fileprivate func resetBoard() {
-        for row in 0..<3 {
-            for col in 0..<3 {
+        for row in 0..<boardSize {
+            for col in 0..<boardSize {
                 board[row][col]?.removeAllChildren()
                 boardState[row][col] = 0
             }
         }
-        currentPlayer = 1
+        currentPlayer = .x
     }
-    
+
+    fileprivate func checkLine(a: Int, b: Int, c: Int) -> Bool {
+        return a != 0 && a == b && b == c
+    }
+
     fileprivate func checkWin() -> Int {
-        // Check rows and columns
-        for i in 0..<3 {
-            if boardState[i][0] != 0 && boardState[i][0] == boardState[i][1] && boardState[i][1] == boardState[i][2] {
+        for i in 0..<boardSize {
+            if checkLine(a: boardState[i][0], b: boardState[i][1], c: boardState[i][2]) {
                 return boardState[i][0]
             }
-            if boardState[0][i] != 0 && boardState[0][i] == boardState[1][i] && boardState[1][i] == boardState[2][i] {
+            if checkLine(a: boardState[0][i], b: boardState[1][i], c: boardState[2][i]) {
                 return boardState[0][i]
             }
         }
-        // Check diagonals
-        if boardState[0][0] != 0 && boardState[0][0] == boardState[1][1] && boardState[1][1] == boardState[2][2] {
+        if checkLine(a: boardState[0][0], b: boardState[1][1], c: boardState[2][2]) {
             return boardState[0][0]
         }
-        if boardState[0][2] != 0 && boardState[0][2] == boardState[1][1] && boardState[1][1] == boardState[2][0] {
+        if checkLine(a: boardState[0][2], b: boardState[1][1], c: boardState[2][0]) {
             return boardState[0][2]
         }
         return 0
     }
-    
+
     func makeMove(row: Int, col: Int) {
-        if boardState[row][col] == 0 {
-            let symbol = currentPlayer == 1 ? "❌" : "⭕"
-            let label = SKLabelNode(text: symbol)
-            label.fontSize = 240
-            board[row][col]?.addChild(label)
-            boardState[row][col] = currentPlayer
-            
-            if let sound = NSSound(named: NSSound.Name("Pop")) {
-                if sound.isPlaying {
-                    sound.stop()  // Stop the current playback before playing again
-                }
-                sound.play()
+        guard boardState[row][col] == 0 else { return }
+
+        let label = SKLabelNode(text: currentPlayer.symbol)
+        label.fontSize = 240
+        board[row][col]?.addChild(label)
+        boardState[row][col] = currentPlayer.rawValue
+
+        playSound(named: "Pop")
+
+        if checkWin() != 0 {
+            print("Player \(currentPlayer.rawValue) wins!")
+            playSound(named: "Glass")
+            resetBoard()
+        } else {
+            currentPlayer = currentPlayer.next
+        }
+    }
+
+    fileprivate func playSound(named soundName: String) {
+        if let sound = NSSound(named: NSSound.Name(soundName)) {
+            if sound.isPlaying {
+                sound.stop()
             }
-            
-            if checkWin() != 0 {
-                print("Player \(currentPlayer) wins!")
-                if let sound = NSSound(named: NSSound.Name("Glass")) {
-                    if sound.isPlaying {
-                        sound.stop()
-                    }
-                    sound.play()
-                }
-                resetBoard()
-            } else {
-                currentPlayer = currentPlayer == 1 ? 2 : 1
-            }
+            sound.play()
         }
     }
 }
