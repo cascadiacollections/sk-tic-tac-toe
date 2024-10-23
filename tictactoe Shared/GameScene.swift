@@ -96,12 +96,18 @@ class GameScene: SKScene {
             boardState[row][col] = currentPlayer
             
             if let sound = NSSound(named: NSSound.Name("Pop")) {
+                if sound.isPlaying {
+                    sound.stop()  // Stop the current playback before playing again
+                }
                 sound.play()
             }
             
             if checkWin() != 0 {
                 print("Player \(currentPlayer) wins!")
                 if let sound = NSSound(named: NSSound.Name("Glass")) {
+                    if sound.isPlaying {
+                        sound.stop()
+                    }
                     sound.play()
                 }
                 resetBoard()
