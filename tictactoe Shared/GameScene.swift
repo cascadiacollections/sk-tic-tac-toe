@@ -13,7 +13,15 @@ class GameScene: SKScene {
         case o = 2
 
         var symbol: String {
-            return self == .x ? "❌" : "⭕"
+            return self == .x ? "❌" : "⭕" // Used only if rendering as text
+        }
+
+        var isTextBased: Bool {
+            return self == .x // Configurable: Set to true to use text for X, false for O
+        }
+
+        var fontColor: SKColor {
+            return self == .x ? .red : .blue // Configurable colors for X and O
         }
 
         var next: Player {
@@ -116,12 +124,23 @@ class GameScene: SKScene {
         guard boardState[row][col] == 0 else { return }
 
         if let tile = board[row][col] {
-            let label = SKLabelNode(text: currentPlayer.symbol)
-            label.fontSize = tile.frame.size.height * 0.8  // Set font size relative to tile size
-            label.horizontalAlignmentMode = .center
-            label.verticalAlignmentMode = .center
-            label.position = CGPoint(x: 0, y: 0)  // Center the label
-            tile.addChild(label)
+            if currentPlayer.isTextBased {
+                // Use text rendering for X
+                let label = SKLabelNode(text: currentPlayer.symbol)
+                label.fontSize = tile.frame.size.height * 0.8  // Set font size relative to tile size
+                label.horizontalAlignmentMode = .center
+                label.verticalAlignmentMode = .center
+                label.position = CGPoint(x: 0, y: 0)  // Center the label
+                label.fontColor = currentPlayer.fontColor // Set the font color (red for X)
+                tile.addChild(label)
+            } else {
+                // Use shape rendering for O
+                let circle = SKShapeNode(circleOfRadius: tile.frame.size.height * 0.35)
+                circle.strokeColor = currentPlayer.fontColor // Set to blue for O
+                circle.lineWidth = 10.0
+                circle.position = CGPoint(x: 0, y: 0) // Center the circle
+                tile.addChild(circle)
+            }
         }
         
         boardState[row][col] = currentPlayer.rawValue
