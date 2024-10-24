@@ -81,8 +81,15 @@ class GameScene: SKScene {
                 boardState[row][col] = 0
             }
         }
-        currentPlayer = .x
-        winningLine?.removeFromParent()  // Remove any previous winning line
+        
+        winningLine?.removeFromParent()
+        winningLine = nil
+        // Remove all nodes with the "winningLine" tag
+        enumerateChildNodes(withName: "winningLine") { node, _ in
+            node.removeFromParent()
+        }
+        
+        currentPlayer = Bool.random() ? .x : .o
     }
 
     fileprivate func checkLine(a: Int, b: Int, c: Int) -> Bool {
@@ -185,6 +192,7 @@ class GameScene: SKScene {
         let line = SKShapeNode(path: path)
         line.strokeColor = NSColor.red
         line.lineWidth = 10.0
+        line.name = "winningLine"
         
         // Add line to the scene
         addChild(line)
