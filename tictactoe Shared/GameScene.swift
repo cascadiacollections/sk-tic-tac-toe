@@ -92,27 +92,38 @@ class GameScene: SKScene {
         currentPlayer = Bool.random() ? .x : .o
     }
 
-    fileprivate func checkLine(a: Int, b: Int, c: Int) -> Bool {
-        return a != 0 && a == b && b == c
+    fileprivate func checkLine(_ values: Int...) -> Bool {
+        guard let first = values.first, first != 0 else {
+            return false
+        }
+        
+        for value in values {
+            if value != first {
+                return false
+            }
+        }
+        return true
     }
 
     fileprivate func checkWin() -> (Int, [(Int, Int)]?) {
         // Check rows and columns
         for i in 0..<boardSize {
-            if checkLine(a: boardState[i][0], b: boardState[i][1], c: boardState[i][2]) {
+            if checkLine(boardState[i][0], boardState[i][1], boardState[i][2]) {
                 return (boardState[i][0], [(i, 0), (i, 1), (i, 2)]) // Row win
             }
-            if checkLine(a: boardState[0][i], b: boardState[1][i], c: boardState[2][i]) {
+            if checkLine(boardState[0][i], boardState[1][i], boardState[2][i]) {
                 return (boardState[0][i], [(0, i), (1, i), (2, i)]) // Column win
             }
         }
+        
         // Check diagonals
-        if checkLine(a: boardState[0][0], b: boardState[1][1], c: boardState[2][2]) {
+        if checkLine(boardState[0][0], boardState[1][1], boardState[2][2]) {
             return (boardState[0][0], [(0, 0), (1, 1), (2, 2)]) // Diagonal (top-left to bottom-right)
         }
-        if checkLine(a: boardState[0][2], b: boardState[1][1], c: boardState[2][0]) {
+        if checkLine(boardState[0][2], boardState[1][1], boardState[2][0]) {
             return (boardState[0][2], [(0, 2), (1, 1), (2, 0)]) // Diagonal (top-right to bottom-left)
         }
+        
         return (0, nil) // No win
     }
 
