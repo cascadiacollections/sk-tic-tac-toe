@@ -1,6 +1,9 @@
 import SpriteKit
 import AppKit
 
+/**
+  Tic-Tac-Toe implementation using SpriteKit.
+ */
 class GameScene: SKScene {
     fileprivate let boardSize = 3
     fileprivate var board: [[SKSpriteNode?]] = Array(repeating: Array(repeating: nil, count: 3), count: 3)
@@ -34,8 +37,6 @@ class GameScene: SKScene {
             print("Failed to load GameScene.sks")
             abort()
         }
-
-        scene.scaleMode = .aspectFill
         return scene
     }
 
@@ -167,7 +168,7 @@ class GameScene: SKScene {
         if winner != 0 {
             print("Player \(currentPlayer.rawValue) wins!")
             if let winCoords = winCoordinates {
-                drawWinningLine(winCoordinates: winCoords)
+                drawWinningLine(winCoordinates: winCoords, winner: currentPlayer)
             }
             let delayAction = SKAction.wait(forDuration: 5.0)
             run(delayAction) {
@@ -186,7 +187,7 @@ class GameScene: SKScene {
         }
     }
 
-    fileprivate func drawWinningLine(winCoordinates: [(Int, Int)]) {
+    fileprivate func drawWinningLine(winCoordinates: [(Int, Int)], winner: Player) {
         guard let first = winCoordinates.first, let last = winCoordinates.last else { return }
         
         let startX = board[first.0][first.1]!.position.x
@@ -201,7 +202,7 @@ class GameScene: SKScene {
         
         // Create the line node
         let line = SKShapeNode(path: path)
-        line.strokeColor = NSColor.red
+        line.strokeColor = winner == .x ? NSColor.red : NSColor.blue
         line.lineWidth = 10.0
         line.name = "winningLine"
         
