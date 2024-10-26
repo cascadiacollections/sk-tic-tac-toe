@@ -93,17 +93,12 @@ class GameScene: SKScene {
         currentPlayer = Bool.random() ? .x : .o
     }
 
+    /**
+     Ensure all values match the first value.
+     */
     fileprivate func checkLine(_ values: Int...) -> Bool {
-        guard let first = values.first, first != 0 else {
-            return false
-        }
-        
-        for value in values {
-            if value != first {
-                return false
-            }
-        }
-        return true
+        guard let first = values.first, first != 0 else { return false }
+        return values.allSatisfy { $0 == first }
     }
 
     fileprivate func checkWin() -> (Int, [(Int, Int)]?) {
