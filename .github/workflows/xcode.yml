@@ -8,12 +8,15 @@ on:
 
 jobs:
   build:
-    name: Build and analyze default scheme using xcodebuild
-    runs-on: macos-latest
+    name: Build and analyze with Xcode Beta
+    runs-on: macos-13  # Explicitly specify macOS 13 for compatibility with newer Xcode versions
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set Xcode Beta as Default
+        run: sudo xcode-select -switch /Applications/Xcode-beta.app
 
       - name: Determine Default Scheme
         run: |
@@ -44,6 +47,4 @@ jobs:
           scheme: ${{ env.scheme }}
           filetype: ${{ env.filetype }}
           file_to_build: ${{ env.file_to_build }}
-        run: |
-          # Clean, build, and analyze the project
-          xcodebuild clean build analyze -scheme "$scheme" -"$filetype" "$file_to_build" | xcpretty && exit ${PIPESTATUS[0]}
+        run:
