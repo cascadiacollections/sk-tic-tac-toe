@@ -1,3 +1,4 @@
+import os
 import SpriteKit
 #if os(iOS)
 import UIKit
@@ -62,7 +63,7 @@ class GameScene: SKScene {
 
     class func newGameScene(boardSize: Int = 3) -> GameScene {
         guard let scene = SKScene(fileNamed: "GameScene") as? GameScene else {
-            print("Failed to load GameScene.sks")
+            os_log("Failed to load GameScene.sks")
             abort()
         }
         scene.boardSize = boardSize
@@ -207,7 +208,7 @@ class GameScene: SKScene {
         }
 
         if let winningPattern = winningPatterns.first(where: { (currentPlayer == .x ? xBoard : oBoard) & $0 == $0 }) {
-            print("Player \(currentPlayer.rawValue) wins!")
+            os_log("Player \(self.currentPlayer.rawValue) wins!")
             gameState = .won // Update the game state to won
             drawWinningLine(for: winningPattern)
             let delayAction = SKAction.wait(forDuration: 5.0)
@@ -215,7 +216,7 @@ class GameScene: SKScene {
                 self.resetBoard()
             }
         } else if checkDraw() {
-            print("It's a draw!")
+            os_log("It's a draw!")
             gameState = .draw // Update the game state to draw
             let delayAction = SKAction.wait(forDuration: 5.0)
             run(delayAction) {
