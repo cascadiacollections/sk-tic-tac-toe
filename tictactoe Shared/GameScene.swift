@@ -54,26 +54,27 @@ class GameScene: SKScene {
     #if os(iOS)
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        handleTouch(at: location)
+        handleTouch(at: touch.location(in: self))
     }
     #elseif os(macOS)
     override func mouseDown(with event: NSEvent) {
-        let location = event.location(in: self)
-        handleTouch(at: location)
+        handleTouch(at: event.location(in: self))
     }
     #endif
 
     private func handleTouch(at location: CGPoint) {
-        let nodesAtPoint = self.nodes(at: location)
-        
-        for node in nodesAtPoint {
-            if let nodeName = node.name, nodeName.contains("-") {
-                let coordinates = nodeName.split(separator: "-").compactMap { Int($0) }
-                if coordinates.count == 2 {
-                    makeMove(row: coordinates[0], col: coordinates[1])
-                }
-            }
+        // Calculate the size of each cell based on the board size and scene dimensions
+        let cellSize = min(size.width, size.height) / CGFloat(boardSize)
+        let xOffset = -cellSize * CGFloat(boardSize) / 2
+        let yOffset = -cellSize * CGFloat(boardSize) / 2
+
+        // Determine the row and column based on the location of the touch
+        let col = Int((location.x - xOffset) / cellSize)
+        let row = Int((location.y - yOffset) / cellSize)
+
+        // Ensure row and column are within bounds, then make the move
+        if row >= 0 && row < boardSize && col >= 0 && col < boardSize {
+            makeMove(row: row, col: col)
         }
     }
 
@@ -210,27 +211,31 @@ class GameScene: SKScene {
                 }
             }
         }
-        
-        guard let start = winningCoordinates.first, let end = winningCoordinates.last else { return }
-        
-        let startX = board[start.0][start.1]!.position.x
-        let startY = board[start.0][start.1]!.position.y
-        let endX = board[end.0][end.1]!.position.x
-        let endY = board[end.0][end.1]!.position.y
-        
-        // Create a path for the line
-        let path = CGMutablePath()
-        path.move(to: CGPoint(x: startX, y: startY))
-        path.addLine(to: CGPoint(x: endX, y: endY))
-        
-        // Create the line node and add the name tag
-        let line = SKShapeNode(path: path)
-        line.strokeColor = currentPlayer.fontColor
-        line.lineWidth = 10.0
-        line.name = "winningLine" // Tag the line for removal during reset
-        
-        // Add line to the scene
-        addChild(line)
-        winningLine = line // Store the line so it can be removed later
+
+        if let start = winningCoordinates.first,
+           let end = winningCoordinates.last,
+           let startNode = board[start.0][start.1],
+           let endNode = board[end.0][end.1] {
+
+            let startX = startNode.position.x
+            let startY = startNode.position.y
+            let endX = endNode.position.x
+            let endY = endNode.position.y
+
+            // Create a path for the line
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: startX, y: startY))
+            path.addLine(to: CGPoint(x: endX, y: endY))
+            
+            // Create the line node and add the name tag
+            let line = SKShapeNode(path: path)
+            line.strokeColor = currentPlayer.fontColor
+            line.lineWidth = 10.0
+            line.name = "winningLine" // Tag the line for removal during reset
+            
+            // Add line to the scene
+            addChild(line)
+            winningLine = line // Store the line so it can be removed later
+        }
     }
 }
