@@ -8,15 +8,12 @@ on:
 
 jobs:
   build:
-    name: Build and analyze with Xcode Beta
-    runs-on: macos-14  # Explicitly specify macOS 13 for compatibility with newer Xcode versions
+    name: Build and analyze default scheme using xcodebuild
+    runs-on: macos-14
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set Xcode Beta as Default
-        run: sudo xcode-select -switch /Applications/Xcode-beta.app
 
       - name: Determine Default Scheme
         run: |
@@ -43,10 +40,10 @@ jobs:
           echo "file_to_build=$file_to_build" >> $GITHUB_ENV
 
       - name: Build and Analyze
-        run: |
-          # Clean, build, and analyze the project
-          xcodebuild clean build analyze -scheme "$scheme" -"$filetype" "$file_to_build" | xcpretty && exit ${PIPESTATUS[0]}
         env:
           scheme: ${{ env.scheme }}
           filetype: ${{ env.filetype }}
           file_to_build: ${{ env.file_to_build }}
+        run: |
+          # Clean, build, and analyze the project
+          xcodebuild clean build analyze -scheme "$scheme" -"$filetype" "$file_to_build" | xcpretty && exit ${PIPESTATUS[0]}
