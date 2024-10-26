@@ -43,8 +43,10 @@ jobs:
           echo "file_to_build=$file_to_build" >> $GITHUB_ENV
 
       - name: Build and Analyze
+        run: |
+          # Clean, build, and analyze the project
+          xcodebuild clean build analyze -scheme "$scheme" -"$filetype" "$file_to_build" | xcpretty && exit ${PIPESTATUS[0]}
         env:
           scheme: ${{ env.scheme }}
           filetype: ${{ env.filetype }}
           file_to_build: ${{ env.file_to_build }}
-        run:
