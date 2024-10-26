@@ -1,5 +1,15 @@
 import SpriteKit
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
 import AppKit
+#endif
+
+#if os(iOS)
+typealias GameColor = UIColor
+#elseif os(macOS)
+typealias GameColor = NSColor
+#endif
 
 /**
   Tic-Tac-Toe implementation using SpriteKit.
@@ -40,8 +50,20 @@ class GameScene: SKScene {
         return scene
     }
 
+    #if os(iOS)
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+        handleTouch(at: location)
+    }
+    #elseif os(macOS)
     override func mouseDown(with event: NSEvent) {
         let location = event.location(in: self)
+        handleTouch(at: location)
+    }
+    #endif
+
+    private func handleTouch(at location: CGPoint) {
         let nodesAtPoint = self.nodes(at: location)
 
         for node in nodesAtPoint {
@@ -197,7 +219,7 @@ class GameScene: SKScene {
         
         // Create the line node
         let line = SKShapeNode(path: path)
-        line.strokeColor = winner == .x ? NSColor.red : NSColor.blue
+        line.strokeColor = winner == .x ? GameColor.red : GameColor.blue
         line.lineWidth = 10.0
         line.name = "winningLine"
         
