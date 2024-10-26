@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build and analyze with Xcode Beta
-    runs-on: macos-13  # Explicitly specify macOS 13 for compatibility with newer Xcode versions
+    runs-on: macos-14  # Explicitly specify macOS 13 for compatibility with newer Xcode versions
 
     steps:
       - name: Checkout repository
