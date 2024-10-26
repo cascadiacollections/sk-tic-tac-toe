@@ -20,23 +20,22 @@ class GameScene: SKScene {
     fileprivate var winningLine: SKShapeNode? // To store the winning line
 
     enum Player: Int {
-        case x = 1
-        case o = 2
+        case x = 1, o
 
         var symbol: String {
-            return self == .x ? "❌" : "⭕"
+            ["❌", "⭕"][rawValue - 1]
         }
 
         var isTextBased: Bool {
-            return self == .x // Configurable: Set to true to use text for X, false for O
+            self == .x
         }
 
         var fontColor: GameColor {
-            return self == .x ? .red : .blue
+            [GameColor.red, GameColor.blue][rawValue - 1]
         }
 
         var next: Player {
-            return self == .x ? .o : .x
+            self == .x ? .o : .x
         }
     }
 
@@ -102,17 +101,10 @@ class GameScene: SKScene {
     }
 
     fileprivate func resetBoard() {
-        for row in 0..<boardSize {
-            for col in 0..<boardSize {
-                board[row][col]?.removeAllChildren()
-            }
+        while let lineNode = childNode(withName: "winningLine") {
+            lineNode.removeFromParent()
         }
-        
-        // Remove the winning line if it exists
-        enumerateChildNodes(withName: "winningLine") { node, _ in
-            node.removeFromParent()
-        }
-        
+        board.flatMap { $0 }.forEach { $0?.removeAllChildren() }
         xBoard = 0
         oBoard = 0
         currentPlayer = Bool.random() ? .x : .o
