@@ -23,19 +23,27 @@ class GameScene: SKScene {
         case x = 1, o
 
         var symbol: String {
-            ["❌", "⭕"][rawValue - 1]
+            @inline(__always) get {
+                ["❌", "⭕"][rawValue - 1]
+            }
         }
 
         var isTextBased: Bool {
-            self == .x
+            @inline(__always) get {
+                self == .x
+            }
         }
 
         var fontColor: GameColor {
-            [GameColor.red, GameColor.blue][rawValue - 1]
+            @inline(__always) get {
+                [GameColor.red, GameColor.blue][rawValue - 1]
+            }
         }
 
         var next: Player {
-            self == .x ? .o : .x
+            @inline(__always) get {
+                self == .x ? .o : .x
+            }
         }
     }
 
@@ -111,6 +119,7 @@ class GameScene: SKScene {
         currentPlayer = Bool.random() ? .x : .o
     }
 
+    @inline(__always)
     private func positionToBit(row: Int, col: Int) -> Int {
         return 1 << (row * boardSize + col)
     }
@@ -143,6 +152,7 @@ class GameScene: SKScene {
         winningPatterns.append(diagonalPattern2)
     }
 
+    @inline(never)
     fileprivate func checkWin(for playerBoard: Int) -> Bool {
         return winningPatterns.contains { (playerBoard & $0) == $0 }
     }
