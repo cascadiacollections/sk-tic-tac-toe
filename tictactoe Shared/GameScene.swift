@@ -166,6 +166,7 @@ class GameScene: SKScene {
         return winningPatterns.contains { (playerBoard & $0) == $0 }
     }
 
+    @inline(never)
     fileprivate func checkDraw() -> Bool {
         let fullBoard = (1 << (boardSize * boardSize)) - 1
         return (xBoard | oBoard) == fullBoard
