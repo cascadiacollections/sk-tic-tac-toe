@@ -11,13 +11,11 @@ typealias GameColor = UIColor
 typealias GameColor = NSColor
 #endif
 
-/**
-  Tic-Tac-Toe implementation using SpriteKit.
- */
 class GameScene: SKScene {
-    fileprivate let boardSize = 3
-    fileprivate var board: [[SKSpriteNode?]] = Array(repeating: Array(repeating: nil, count: 3), count: 3)
-    fileprivate var boardState: [[Int]] = Array(repeating: Array(repeating: 0, count: 3), count: 3)
+    fileprivate var boardSize: Int = 3 // Default to 3x3 board, configurable
+    fileprivate var board: [[SKSpriteNode?]] = []
+    fileprivate var xBoard: Int = 0 // Bit representation of X's moves
+    fileprivate var oBoard: Int = 0 // Bit representation of O's moves
     fileprivate var currentPlayer: Player = .x
     fileprivate var winningLine: SKShapeNode? // To store the winning line
 
@@ -26,15 +24,15 @@ class GameScene: SKScene {
         case o = 2
 
         var symbol: String {
-            return self == .x ? "❌" : "⭕" // Used only if rendering as text
+            return self == .x ? "❌" : "⭕"
         }
 
         var isTextBased: Bool {
             return self == .x // Configurable: Set to true to use text for X, false for O
         }
 
-        var fontColor: SKColor {
-            return self == .x ? .red : .blue // Configurable colors for X and O
+        var fontColor: GameColor {
+            return self == .x ? .red : .blue
         }
 
         var next: Player {
@@ -42,11 +40,15 @@ class GameScene: SKScene {
         }
     }
 
-    class func newGameScene() -> GameScene {
+    private var winningPatterns: [Int] = [] // Store generated winning patterns based on board size
+
+    class func newGameScene(boardSize: Int = 3) -> GameScene {
         guard let scene = SKScene(fileNamed: "GameScene") as? GameScene else {
             print("Failed to load GameScene.sks")
             abort()
         }
+        scene.boardSize = boardSize
+        scene.generateWinningPatterns()
         return scene
     }
 
@@ -65,7 +67,7 @@ class GameScene: SKScene {
 
     private func handleTouch(at location: CGPoint) {
         let nodesAtPoint = self.nodes(at: location)
-
+        
         for node in nodesAtPoint {
             if let nodeName = node.name, nodeName.contains("-") {
                 let coordinates = nodeName.split(separator: "-").compactMap { Int($0) }
@@ -85,9 +87,11 @@ class GameScene: SKScene {
         let xOffset = -cellSize * CGFloat(boardSize) / 2
         let yOffset = -cellSize * CGFloat(boardSize) / 2
 
+        board = Array(repeating: Array(repeating: nil, count: boardSize), count: boardSize)
+        
         for row in 0..<boardSize {
             for col in 0..<boardSize {
-                let cell = SKSpriteNode(color: SKColor.gray, size: CGSize(width: cellSize - 10, height: cellSize - 10))
+                let cell = SKSpriteNode(color: GameColor.gray, size: CGSize(width: cellSize - 10, height: cellSize - 10))
                 cell.position = CGPoint(x: xOffset + CGFloat(col) * cellSize + cellSize / 2,
                                         y: yOffset + CGFloat(row) * cellSize + cellSize / 2)
                 cell.name = "\(row)-\(col)"
@@ -101,127 +105,137 @@ class GameScene: SKScene {
         for row in 0..<boardSize {
             for col in 0..<boardSize {
                 board[row][col]?.removeAllChildren()
-                boardState[row][col] = 0
             }
         }
         
-        winningLine?.removeFromParent()
-        winningLine = nil
-        // Remove all nodes with the "winningLine" tag
+        // Remove the winning line if it exists
         enumerateChildNodes(withName: "winningLine") { node, _ in
             node.removeFromParent()
         }
         
+        xBoard = 0
+        oBoard = 0
         currentPlayer = Bool.random() ? .x : .o
     }
 
-    /**
-     Ensure all values match the first value.
-     */
-    fileprivate func checkLine(_ values: Int...) -> Bool {
-        guard let first = values.first, first != 0 else { return false }
-        return values.allSatisfy { $0 == first }
+    private func positionToBit(row: Int, col: Int) -> Int {
+        return 1 << (row * boardSize + col)
     }
 
-    fileprivate func checkWin() -> (Int, [(Int, Int)]?) {
-        // Check rows and columns
+    private func generateWinningPatterns() {
+        winningPatterns.removeAll()
+        
+        // Row patterns
+        winningPatterns.append(contentsOf: (0..<boardSize).map { row in
+            (0..<boardSize).reduce(0) { $0 | positionToBit(row: row, col: $1) }
+        })
+
+        // Column patterns
+        winningPatterns.append(contentsOf: (0..<boardSize).map { col in
+            (0..<boardSize).reduce(0) { $0 | positionToBit(row: $1, col: col) }
+        })
+        
+        // Diagonal (top-left to bottom-right)
+        var diagonalPattern1 = 0
         for i in 0..<boardSize {
-            if checkLine(boardState[i][0], boardState[i][1], boardState[i][2]) {
-                return (boardState[i][0], [(i, 0), (i, 1), (i, 2)]) // Row win
-            }
-            if checkLine(boardState[0][i], boardState[1][i], boardState[2][i]) {
-                return (boardState[0][i], [(0, i), (1, i), (2, i)]) // Column win
-            }
+            diagonalPattern1 |= positionToBit(row: i, col: i)
         }
+        winningPatterns.append(diagonalPattern1)
         
-        // Check diagonals
-        if checkLine(boardState[0][0], boardState[1][1], boardState[2][2]) {
-            return (boardState[0][0], [(0, 0), (1, 1), (2, 2)]) // Diagonal (top-left to bottom-right)
+        // Diagonal (top-right to bottom-left)
+        var diagonalPattern2 = 0
+        for i in 0..<boardSize {
+            diagonalPattern2 |= positionToBit(row: i, col: boardSize - 1 - i)
         }
-        if checkLine(boardState[0][2], boardState[1][1], boardState[2][0]) {
-            return (boardState[0][2], [(0, 2), (1, 1), (2, 0)]) // Diagonal (top-right to bottom-left)
-        }
-        
-        return (0, nil) // No win
+        winningPatterns.append(diagonalPattern2)
+    }
+
+    fileprivate func checkWin(for playerBoard: Int) -> Bool {
+        return winningPatterns.contains { (playerBoard & $0) == $0 }
     }
 
     fileprivate func checkDraw() -> Bool {
-        for row in 0..<boardSize {
-            for col in 0..<boardSize {
-                if boardState[row][col] == 0 {
-                    return false // Found an empty spot, so no draw yet
-                }
-            }
-        }
-        return true // No empty spots, it's a draw
+        let fullBoard = (1 << (boardSize * boardSize)) - 1
+        return (xBoard | oBoard) == fullBoard
     }
 
     func makeMove(row: Int, col: Int) {
-        guard boardState[row][col] == 0 else { return }
+        let moveBit = positionToBit(row: row, col: col)
+        
+        if (xBoard | oBoard) & moveBit != 0 {
+            return // Position already taken
+        }
+        
+        if currentPlayer == .x {
+            xBoard |= moveBit
+        } else {
+            oBoard |= moveBit
+        }
 
         if let tile = board[row][col] {
             if currentPlayer.isTextBased {
-                // Use text rendering for X
                 let label = SKLabelNode(text: currentPlayer.symbol)
-                label.fontSize = tile.frame.size.height * 0.8  // Set font size relative to tile size
+                label.fontSize = tile.frame.size.height * 0.8
                 label.horizontalAlignmentMode = .center
                 label.verticalAlignmentMode = .center
-                label.position = CGPoint(x: 0, y: 0)  // Center the label
-                label.fontColor = currentPlayer.fontColor // Set the font color (red for X)
+                label.position = CGPoint(x: 0, y: 0)
+                label.fontColor = currentPlayer.fontColor
                 tile.addChild(label)
             } else {
-                // Use shape rendering for O
                 let circle = SKShapeNode(circleOfRadius: tile.frame.size.height * 0.35)
-                circle.strokeColor = currentPlayer.fontColor // Set to blue for O
+                circle.strokeColor = currentPlayer.fontColor
                 circle.lineWidth = 10.0
-                circle.position = CGPoint(x: 0, y: 0) // Center the circle
+                circle.position = CGPoint(x: 0, y: 0)
                 tile.addChild(circle)
             }
         }
-        
-        boardState[row][col] = currentPlayer.rawValue
 
-        let (winner, winCoordinates) = checkWin()
-        if winner != 0 {
+        if let winningPattern = winningPatterns.first(where: { (currentPlayer == .x ? xBoard : oBoard) & $0 == $0 }) {
             print("Player \(currentPlayer.rawValue) wins!")
-            if let winCoords = winCoordinates {
-                drawWinningLine(winCoordinates: winCoords, winner: currentPlayer)
-            }
+            drawWinningLine(for: winningPattern)
             let delayAction = SKAction.wait(forDuration: 5.0)
             run(delayAction) {
                 self.resetBoard()
             }
-        }
-        else if checkDraw() {
+        } else if checkDraw() {
             print("It's a draw!")
             let delayAction = SKAction.wait(forDuration: 5.0)
             run(delayAction) {
                 self.resetBoard()
             }
-        }
-        else {
+        } else {
             currentPlayer = currentPlayer.next
         }
     }
 
-    fileprivate func drawWinningLine(winCoordinates: [(Int, Int)], winner: Player) {
-        guard let first = winCoordinates.first, let last = winCoordinates.last else { return }
+    fileprivate func drawWinningLine(for winningPattern: Int) {
+        var winningCoordinates: [(Int, Int)] = []
         
-        let startX = board[first.0][first.1]!.position.x
-        let startY = board[first.0][first.1]!.position.y
-        let endX = board[last.0][last.1]!.position.x
-        let endY = board[last.0][last.1]!.position.y
+        for row in 0..<boardSize {
+            for col in 0..<boardSize {
+                if winningPattern & positionToBit(row: row, col: col) != 0 {
+                    winningCoordinates.append((row, col))
+                }
+            }
+        }
         
-        // Create a red line from start to end coordinates
+        guard let start = winningCoordinates.first, let end = winningCoordinates.last else { return }
+        
+        let startX = board[start.0][start.1]!.position.x
+        let startY = board[start.0][start.1]!.position.y
+        let endX = board[end.0][end.1]!.position.x
+        let endY = board[end.0][end.1]!.position.y
+        
+        // Create a path for the line
         let path = CGMutablePath()
         path.move(to: CGPoint(x: startX, y: startY))
         path.addLine(to: CGPoint(x: endX, y: endY))
         
-        // Create the line node
+        // Create the line node and add the name tag
         let line = SKShapeNode(path: path)
-        line.strokeColor = winner == .x ? GameColor.red : GameColor.blue
+        line.strokeColor = currentPlayer.fontColor
         line.lineWidth = 10.0
-        line.name = "winningLine"
+        line.name = "winningLine" // Tag the line for removal during reset
         
         // Add line to the scene
         addChild(line)
