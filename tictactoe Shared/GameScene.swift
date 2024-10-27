@@ -13,13 +13,12 @@ typealias GameColor = NSColor
 #endif
 
 class GameScene: SKScene {
-    fileprivate var boardSize: Int = 3 // Default to 3x3 board, configurable
-    fileprivate var board: [[SKSpriteNode?]] = []
-    fileprivate var xBoard: Int = 0 // Bit representation of X's moves
-    fileprivate var oBoard: Int = 0 // Bit representation of O's moves
-    fileprivate var currentPlayer: Player = .x
-    fileprivate var winningLine: SKShapeNode? // To store the winning line
-    fileprivate var gameState: GameState = .ongoing // Track the current state of the game
+    fileprivate var boardSize = 3 // Configurable board size, defaulting to 3x3
+    fileprivate var board = [[SKSpriteNode?]]() // 2D array to hold board cells
+    fileprivate var xBoard = 0, oBoard = 0 // Bit representations of X's and O's moves
+    fileprivate var currentPlayer: Player = .x // Track the current player
+    fileprivate var winningLine: SKShapeNode? // Stores the winning line for display
+    fileprivate var gameState: GameState = .ongoing // Track game state (ongoing, won, or draw)
     
     // MARK: - Enums
 
@@ -196,40 +195,30 @@ class GameScene: SKScene {
     }
 
     fileprivate func drawWinningLine(for winningPattern: Int) {
-        var winningCoordinates: [(Int, Int)] = []
-        
-        for row in 0..<boardSize {
-            for col in 0..<boardSize {
-                if winningPattern & positionToBit(row: row, col: col) != 0 {
-                    winningCoordinates.append((row, col))
-                }
-            }
+        let winningCoordinates = (0..<boardSize * boardSize).compactMap { i in
+            let (row, col) = (i / boardSize, i % boardSize)
+            return (winningPattern & positionToBit(row: row, col: col) != 0) ? (row, col) : nil
         }
 
         if let start = winningCoordinates.first,
            let end = winningCoordinates.last,
            let startNode = board[start.0][start.1],
            let endNode = board[end.0][end.1] {
-
-            let startX = startNode.position.x
-            let startY = startNode.position.y
-            let endX = endNode.position.x
-            let endY = endNode.position.y
-
-            // Create a path for the line
-            let path = CGMutablePath()
-            path.move(to: CGPoint(x: startX, y: startY))
-            path.addLine(to: CGPoint(x: endX, y: endY))
             
-            // Create the line node and add the name tag
-            let line = SKShapeNode(path: path)
+            let line = SKShapeNode()
+            line.path = {
+                let path = CGMutablePath()
+                path.move(to: startNode.position)
+                path.addLine(to: endNode.position)
+                return path
+            }()
+            
             line.strokeColor = currentPlayer.fontColor
             line.lineWidth = 10.0
-            line.name = "winningLine" // Tag the line for removal during reset
+            line.name = "winningLine"
             
-            // Add line to the scene
             addChild(line)
-            winningLine = line // Store the line so it can be removed later
+            winningLine = line
         }
     }
 }
