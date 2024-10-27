@@ -26,30 +26,10 @@ class GameScene: SKScene {
     /// Enumeration for players, representing X and O with unique properties.
     enum Player: Int {
         case x = 1, o
-
-        var symbol: String {
-            @inline(__always) get {
-                ["❌", "⭕"][rawValue - 1]
-            }
-        }
-
-        var isTextBased: Bool {
-            @inline(__always) get {
-                self == .x
-            }
-        }
-
-        var fontColor: GameColor {
-            @inline(__always) get {
-                [GameColor.red, GameColor.blue][rawValue - 1]
-            }
-        }
-
-        var next: Player {
-            @inline(__always) get {
-                self == .x ? .o : .x
-            }
-        }
+        var symbol: String { ["❌", "⭕"][rawValue - 1] }
+        var isTextBased: Bool { self == .x }
+        var fontColor: GameColor { [GameColor.red, GameColor.blue][rawValue - 1] }
+        var next: Player { self == .x ? .o : .x }
     }
 
     /// Enumeration for the game state, indicating whether the game is ongoing, won, or a draw.
