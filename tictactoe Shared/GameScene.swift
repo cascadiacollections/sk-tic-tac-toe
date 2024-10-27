@@ -75,23 +75,21 @@ class GameScene: SKScene {
         drawBoard()
     }
 
+    @inline(never)
     fileprivate func drawBoard() {
         let cellSize = min(size.width, size.height) / CGFloat(boardSize)
         let offset = -cellSize * CGFloat(boardSize) / 2
-        board = (0..<boardSize).map { _ in Array(repeating: nil, count: boardSize) }
+        board = Array(repeating: Array(repeating: nil, count: boardSize), count: boardSize)
         
-        for i in 0..<(boardSize * boardSize) {
-            let row = i / boardSize
-            let col = i % boardSize
+        (0..<boardSize * boardSize).forEach { i in
             let cell = SKSpriteNode(color: GameColor.gray, size: CGSize(width: cellSize - 10, height: cellSize - 10))
-            
-            // Explicit CGFloat conversion for col and row
-            cell.position = CGPoint(x: offset + (CGFloat(col) + 0.5) * cellSize,
-                                    y: offset + (CGFloat(row) + 0.5) * cellSize)
-            
-            cell.name = "\(row)-\(col)"
+            cell.position = CGPoint(
+                x: offset + (CGFloat(i % boardSize) + 0.5) * cellSize,
+                y: offset + (CGFloat(i / boardSize) + 0.5) * cellSize
+            )
+            cell.name = "\(i / boardSize)-\(i % boardSize)"
             addChild(cell)
-            board[row][col] = cell
+            board[i / boardSize][i % boardSize] = cell
         }
     }
 
