@@ -53,13 +53,10 @@ class GameScene: SKScene {
     }
 
     /// Enumeration for the game state, indicating whether the game is ongoing, won, or a draw.
-    enum GameState {
-        case ongoing
-        case won
-        case draw
-    }
-
-    private var winningPatterns: [Int] = [] // Store generated winning patterns based on board size
+    enum GameState { case ongoing, won, draw }
+    
+    /// Possible winning patterns for square N x N grid.
+    private static var winningPatterns: [Int] = []
 
     class func newGameScene(boardSize: Int = 3) -> GameScene {
         guard let scene = SKScene(fileNamed: "GameScene") as? GameScene else {
@@ -67,7 +64,7 @@ class GameScene: SKScene {
             abort()
         }
         scene.boardSize = boardSize
-        scene.generateWinningPatterns()
+        winningPatterns = scene.generateWinningPatterns()
         return scene
     }
 
@@ -84,13 +81,12 @@ class GameScene: SKScene {
 
     private func handleTouch(at location: CGPoint) {
         let cellSize = min(size.width, size.height) / CGFloat(boardSize)
-        let xOffset = -cellSize * CGFloat(boardSize) / 2
-        let yOffset = -cellSize * CGFloat(boardSize) / 2
+        let offset = -cellSize * CGFloat(boardSize) / 2
 
-        let col = Int((location.x - xOffset) / cellSize)
-        let row = Int((location.y - yOffset) / cellSize)
+        let col = Int((location.x - offset) / cellSize)
+        let row = Int((location.y - offset) / cellSize)
 
-        if row >= 0 && row < boardSize && col >= 0 && col < boardSize {
+        if (0..<boardSize).contains(row) && (0..<boardSize).contains(col) {
             makeMove(row: row, col: col)
         }
     }
@@ -101,20 +97,21 @@ class GameScene: SKScene {
 
     fileprivate func drawBoard() {
         let cellSize = min(size.width, size.height) / CGFloat(boardSize)
-        let xOffset = -cellSize * CGFloat(boardSize) / 2
-        let yOffset = -cellSize * CGFloat(boardSize) / 2
-
-        board = Array(repeating: Array(repeating: nil, count: boardSize), count: boardSize)
+        let offset = -cellSize * CGFloat(boardSize) / 2
+        board = (0..<boardSize).map { _ in Array(repeating: nil, count: boardSize) }
         
-        for row in 0..<boardSize {
-            for col in 0..<boardSize {
-                let cell = SKSpriteNode(color: GameColor.gray, size: CGSize(width: cellSize - 10, height: cellSize - 10))
-                cell.position = CGPoint(x: xOffset + CGFloat(col) * cellSize + cellSize / 2,
-                                        y: yOffset + CGFloat(row) * cellSize + cellSize / 2)
-                cell.name = "\(row)-\(col)"
-                addChild(cell)
-                board[row][col] = cell
-            }
+        for i in 0..<(boardSize * boardSize) {
+            let row = i / boardSize
+            let col = i % boardSize
+            let cell = SKSpriteNode(color: GameColor.gray, size: CGSize(width: cellSize - 10, height: cellSize - 10))
+            
+            // Explicit CGFloat conversion for col and row
+            cell.position = CGPoint(x: offset + (CGFloat(col) + 0.5) * cellSize,
+                                    y: offset + (CGFloat(row) + 0.5) * cellSize)
+            
+            cell.name = "\(row)-\(col)"
+            addChild(cell)
+            board[row][col] = cell
         }
     }
 
@@ -134,37 +131,30 @@ class GameScene: SKScene {
         return 1 << (row * boardSize + col)
     }
 
-    private func generateWinningPatterns() {
-        winningPatterns.removeAll()
+    @inline(never)
+    private func generateWinningPatterns() -> [Int] {
+        var patterns = [Int]()
         
-        // Row patterns
-        winningPatterns.append(contentsOf: (0..<boardSize).map { row in
-            (0..<boardSize).reduce(0) { $0 | positionToBit(row: row, col: $1) }
+        // Row and Column patterns
+        patterns.append(contentsOf: (0..<boardSize).flatMap { i in
+            [
+                (0..<boardSize).reduce(0) { $0 | positionToBit(row: i, col: $1) }, // Row pattern
+                (0..<boardSize).reduce(0) { $0 | positionToBit(row: $1, col: i) }  // Column pattern
+            ]
         })
 
-        // Column patterns
-        winningPatterns.append(contentsOf: (0..<boardSize).map { col in
-            (0..<boardSize).reduce(0) { $0 | positionToBit(row: $1, col: col) }
-        })
+        // Diagonal patterns
+        patterns.append(contentsOf: [
+            (0..<boardSize).reduce(0) { $0 | positionToBit(row: $1, col: $1) },
+            (0..<boardSize).reduce(0) { $0 | positionToBit(row: $1, col: boardSize - 1 - $1) }
+        ])
         
-        // Diagonal (top-left to bottom-right)
-        var diagonalPattern1 = 0
-        for i in 0..<boardSize {
-            diagonalPattern1 |= positionToBit(row: i, col: i)
-        }
-        winningPatterns.append(diagonalPattern1)
-        
-        // Diagonal (top-right to bottom-left)
-        var diagonalPattern2 = 0
-        for i in 0..<boardSize {
-            diagonalPattern2 |= positionToBit(row: i, col: boardSize - 1 - i)
-        }
-        winningPatterns.append(diagonalPattern2)
+        return patterns
     }
 
     @inline(never)
     fileprivate func checkWin(for playerBoard: Int) -> Bool {
-        return winningPatterns.contains { (playerBoard & $0) == $0 }
+        return GameScene.winningPatterns.contains { (playerBoard & $0) == $0 }
     }
 
     @inline(never)
@@ -207,7 +197,7 @@ class GameScene: SKScene {
             }
         }
 
-        if let winningPattern = winningPatterns.first(where: { (currentPlayer == .x ? xBoard : oBoard) & $0 == $0 }) {
+        if let winningPattern = GameScene.winningPatterns.first(where: { (currentPlayer == .x ? xBoard : oBoard) & $0 == $0 }) {
             os_log("Player \(self.currentPlayer.rawValue) wins!")
             gameState = .won // Update the game state to won
             drawWinningLine(for: winningPattern)
