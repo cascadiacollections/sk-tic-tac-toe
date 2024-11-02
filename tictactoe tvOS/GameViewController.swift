@@ -13,7 +13,8 @@ class GameViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let scene = GameScene.newGameScene()
+        let scene = GameScene.init(boardSize: 3)
+        let skView = self.view as! SKView
         skView.presentScene(scene)
         skView.ignoresSiblingOrder = true
         skView.showsFPS = true
