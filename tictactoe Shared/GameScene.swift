@@ -112,24 +112,42 @@ class GameScene: SKScene {
     }
 
     private func displayWinningLine(for player: GameLogic.Player) {
-        guard let winningPattern = gameLogic.getWinningPattern() else { return }
+        // Obtain the winning pattern; exit early if none exists
+        guard let winningPattern = gameLogic.getWinningPattern(),
+              let startCell = winningPattern.first,
+              let endCell = winningPattern.last else { return }
         
-        let cellSize = min(size.width, size.height) / CGFloat(boardSize)
-        let offset = -cellSize * CGFloat(boardSize) / 2
+        let cellSize = calculateCellSize()
+        let offset = calculateOffset(for: cellSize)
         
-        // Ensure we have a valid start and end cell
-        guard let startCell = winningPattern.first, let endCell = winningPattern.last else { return }
+        // Calculate start and end positions based on cells
+        let startPosition = calculatePosition(forRow: startCell.row, col: startCell.col, cellSize: cellSize, offset: offset)
+        let endPosition = calculatePosition(forRow: endCell.row, col: endCell.col, cellSize: cellSize, offset: offset)
         
-        // Helper function to calculate position based on row and column
-        func position(forRow row: Int, col: Int) -> CGPoint {
-            let x = offset + CGFloat(col) * cellSize + cellSize / 2
-            let y = offset + CGFloat(row) * cellSize + cellSize / 2
-            return CGPoint(x: x, y: y)
-        }
+        // Create and style the winning line
+        let lineNode = createWinningLineNode(from: startPosition, to: endPosition, for: player)
         
-        let startPosition = position(forRow: startCell.row, col: startCell.col)
-        let endPosition = position(forRow: endCell.row, col: endCell.col)
-        
+        // Add line node to the scene
+        addChild(lineNode)
+    }
+
+    // MARK: - Helper Methods
+
+    private func calculateCellSize() -> CGFloat {
+        return min(size.width, size.height) / CGFloat(boardSize)
+    }
+
+    private func calculateOffset(for cellSize: CGFloat) -> CGFloat {
+        return -cellSize * CGFloat(boardSize) / 2
+    }
+
+    private func calculatePosition(forRow row: Int, col: Int, cellSize: CGFloat, offset: CGFloat) -> CGPoint {
+        let x = offset + CGFloat(col) * cellSize + cellSize / 2
+        let y = offset + CGFloat(row) * cellSize + cellSize / 2
+        return CGPoint(x: x, y: y)
+    }
+
+    private func createWinningLineNode(from startPosition: CGPoint, to endPosition: CGPoint, for player: GameLogic.Player) -> SKShapeNode {
         let linePath = CGMutablePath()
         linePath.move(to: startPosition)
         linePath.addLine(to: endPosition)
@@ -138,11 +156,6 @@ class GameScene: SKScene {
         lineNode.strokeColor = player == .x ? GameColor.red : GameColor.blue
         lineNode.lineWidth = 5
         
-        // Optional: Add an animation for the winning line
-        lineNode.alpha = 0
-        let fadeInAction = SKAction.fadeIn(withDuration: 0.5)
-        lineNode.run(fadeInAction)
-        
-        addChild(lineNode)
+        return lineNode
     }
 }
