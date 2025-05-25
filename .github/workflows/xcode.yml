@@ -23,19 +23,20 @@ jobs:
       - name: Determine Default Scheme
         run: |
           # Get the default scheme from the target list
-          scheme=$(xcodebuild -list -json | jq -r '.project.targets[0]')
-          echo "Default scheme detected: $scheme"
-          echo "scheme=$scheme" >> $GITHUB_ENV
+          scheme_ios="tictactoe iOS"
+          scheme_macos="tictactoe macOS"
+          echo "scheme_ios=$scheme_ios" >> $GITHUB_ENV
+          echo "scheme_macos=$scheme_macos" >> $GITHUB_ENV
 
       - name: Identify Xcode Project or Workspace
         run: |
           # Check if workspace or project exists, and set the build target
-          if [[ -n "$(ls *.xcworkspace 2>/dev/null)" ]]; then
+          if [[ -n "$(find . -maxdepth 1 -name "*.xcworkspace" 2>/dev/null)" ]]; then
             filetype="workspace"
-            file_to_build=$(ls *.xcworkspace | head -n 1)
-          elif [[ -n "$(ls *.xcodeproj 2>/dev/null)" ]]; then
+            file_to_build=$(find . -maxdepth 1 -name "*.xcworkspace" | head -n 1 | sed 's/^\.\///')
+          elif [[ -n "$(find . -maxdepth 1 -name "*.xcodeproj" 2>/dev/null)" ]]; then
             filetype="project"
-            file_to_build=$(ls *.xcodeproj | head -n 1)
+            file_to_build=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1 | sed 's/^\.\///')
           else
             echo "No .xcworkspace or .xcodeproj found." >&2
             exit 1
@@ -46,7 +47,7 @@ jobs:
 
       - name: Build for iOS
         env:
-          scheme: ${{ env.scheme }}
+          scheme: ${{ env.scheme_ios }}
           filetype: ${{ env.filetype }}
           file_to_build: ${{ env.file_to_build }}
         run: |
@@ -55,7 +56,7 @@ jobs:
       
       - name: Test
         env:
-          scheme: ${{ env.scheme }}
+          scheme: ${{ env.scheme_ios }}
           filetype: ${{ env.filetype }}
           file_to_build: ${{ env.file_to_build }}
         run: |
@@ -64,7 +65,7 @@ jobs:
       
       - name: Build for macOS
         env:
-          scheme: ${{ env.scheme }}
+          scheme: ${{ env.scheme_macos }}
           filetype: ${{ env.filetype }}
           file_to_build: ${{ env.file_to_build }}
         run: |
