@@ -1,4 +1,4 @@
-name: Xcode - Build and Analyze
+name: Xcode - Build and Test
 
 on:
   push:
@@ -8,29 +8,35 @@ on:
 
 jobs:
   build:
-    name: Build and analyze default scheme using xcodebuild
-    runs-on: macos-15
+    name: Build and test using xcodebuild
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Determine Default Scheme
         run: |
           # Get the default scheme from the target list
-          scheme=$(xcodebuild -list -json | jq -r '.project.targets[0]')
-          echo "Default scheme detected: $scheme"
-          echo "scheme=$scheme" >> $GITHUB_ENV
+          scheme_ios="tictactoe iOS"
+          scheme_macos="tictactoe macOS"
+          echo "scheme_ios=$scheme_ios" >> $GITHUB_ENV
+          echo "scheme_macos=$scheme_macos" >> $GITHUB_ENV
 
       - name: Identify Xcode Project or Workspace
         run: |
           # Check if workspace or project exists, and set the build target
-          if [[ -n "$(ls *.xcworkspace 2>/dev/null)" ]]; then
+          if [[ -n "$(find . -maxdepth 1 -name "*.xcworkspace" 2>/dev/null)" ]]; then
             filetype="workspace"
-            file_to_build=$(ls *.xcworkspace | head -n 1)
-          elif [[ -n "$(ls *.xcodeproj 2>/dev/null)" ]]; then
+            file_to_build=$(find . -maxdepth 1 -name "*.xcworkspace" | head -n 1 | sed 's/^\.\///')
+          elif [[ -n "$(find . -maxdepth 1 -name "*.xcodeproj" 2>/dev/null)" ]]; then
             filetype="project"
-            file_to_build=$(ls *.xcodeproj | head -n 1)
+            file_to_build=$(find . -maxdepth 1 -name "*.xcodeproj" | head -n 1 | sed 's/^\.\///')
           else
             echo "No .xcworkspace or .xcodeproj found." >&2
             exit 1
@@ -39,11 +45,39 @@ jobs:
           echo "filetype=$filetype" >> $GITHUB_ENV
           echo "file_to_build=$file_to_build" >> $GITHUB_ENV
 
-      - name: Build and Analyze
+      - name: List available destinations
         env:
-          scheme: ${{ env.scheme }}
+          scheme: ${{ env.scheme_ios }}
           filetype: ${{ env.filetype }}
           file_to_build: ${{ env.file_to_build }}
         run: |
-          # Clean, build, and analyze the project
-          xcodebuild clean build analyze -scheme "$scheme" -"$filetype" "$file_to_build" | xcpretty && exit ${PIPESTATUS[0]}
+          # List available destinations for debugging
+          echo "Available destinations:"
+          xcodebuild -scheme "$scheme" -$filetype "$file_to_build" -showdestinations
+
+      - name: Build for iOS
+        env:
+          scheme: ${{ env.scheme_ios }}
+          filetype: ${{ env.filetype }}
+          file_to_build: ${{ env.file_to_build }}
+        run: |
+          # Clean and build the iOS target
+          xcodebuild clean build -scheme "$scheme" -$filetype "$file_to_build" -destination "platform=macOS" | xcpretty && exit ${PIPESTATUS[0]}
+      
+      - name: Test
+        env:
+          scheme: ${{ env.scheme_ios }}
+          filetype: ${{ env.filetype }}
+          file_to_build: ${{ env.file_to_build }}
+        run: |
+          # Run tests
+          xcodebuild test -scheme "$scheme" -$filetype "$file_to_build" -destination "platform=macOS" -testPlan "tictactoeTests" | xcpretty && exit ${PIPESTATUS[0]}
+      
+      - name: Build for macOS
+        env:
+          scheme: ${{ env.scheme_macos }}
+          filetype: ${{ env.filetype }}
+          file_to_build: ${{ env.file_to_build }}
+        run: |
+          # Build the macOS target
+          xcodebuild clean build -scheme "$scheme" -$filetype "$file_to_build" -destination "platform=macOS" | xcpretty && exit ${PIPESTATUS[0]}
