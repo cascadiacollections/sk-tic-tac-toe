@@ -51,7 +51,7 @@ jobs:
           file_to_build: ${{ env.file_to_build }}
         run: |
           # Clean and build the iOS target
-          xcodebuild clean build -scheme "$scheme" -"$filetype" "$file_to_build" -destination "platform=iOS Simulator,name=iPhone 15" | xcpretty && exit ${PIPESTATUS[0]}
+          xcodebuild clean build -scheme "$scheme" -$filetype "$file_to_build" -destination "platform=iOS Simulator,name=iPhone 15" | xcpretty && exit ${PIPESTATUS[0]}
       
       - name: Test
         env:
@@ -60,7 +60,7 @@ jobs:
           file_to_build: ${{ env.file_to_build }}
         run: |
           # Run tests
-          xcodebuild test -scheme "$scheme" -"$filetype" "$file_to_build" -destination "platform=iOS Simulator,name=iPhone 15" -testPlan "tictactoeTests" | xcpretty && exit ${PIPESTATUS[0]}
+          xcodebuild test -scheme "$scheme" -$filetype "$file_to_build" -destination "platform=iOS Simulator,name=iPhone 15" -testPlan "tictactoeTests" | xcpretty && exit ${PIPESTATUS[0]}
       
       - name: Build for macOS
         env:
@@ -69,4 +69,4 @@ jobs:
           file_to_build: ${{ env.file_to_build }}
         run: |
           # Build the macOS target
-          xcodebuild clean build -scheme "$scheme" -"$filetype" "$file_to_build" -destination "platform=macOS" | xcpretty && exit ${PIPESTATUS[0]}
+          xcodebuild clean build -scheme "$scheme" -$filetype "$file_to_build" -destination "platform=macOS" | xcpretty && exit ${PIPESTATUS[0]}
