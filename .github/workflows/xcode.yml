@@ -1,4 +1,4 @@
-name: Xcode - Build and Analyze
+name: Xcode - Build and Test
 
 on:
   push:
@@ -8,12 +8,17 @@ on:
 
 jobs:
   build:
-    name: Build and analyze default scheme using xcodebuild
-    runs-on: macos-15
+    name: Build and test using xcodebuild
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Determine Default Scheme
         run: |
@@ -39,11 +44,29 @@ jobs:
           echo "filetype=$filetype" >> $GITHUB_ENV
           echo "file_to_build=$file_to_build" >> $GITHUB_ENV
 
-      - name: Build and Analyze
+      - name: Build for iOS
         env:
           scheme: ${{ env.scheme }}
           filetype: ${{ env.filetype }}
           file_to_build: ${{ env.file_to_build }}
         run: |
-          # Clean, build, and analyze the project
-          xcodebuild clean build analyze -scheme "$scheme" -"$filetype" "$file_to_build" | xcpretty && exit ${PIPESTATUS[0]}
+          # Clean and build the iOS target
+          xcodebuild clean build -scheme "$scheme" -"$filetype" "$file_to_build" -destination "platform=iOS Simulator,name=iPhone 15" | xcpretty && exit ${PIPESTATUS[0]}
+      
+      - name: Test
+        env:
+          scheme: ${{ env.scheme }}
+          filetype: ${{ env.filetype }}
+          file_to_build: ${{ env.file_to_build }}
+        run: |
+          # Run tests
+          xcodebuild test -scheme "$scheme" -"$filetype" "$file_to_build" -destination "platform=iOS Simulator,name=iPhone 15" -testPlan "tictactoeTests" | xcpretty && exit ${PIPESTATUS[0]}
+      
+      - name: Build for macOS
+        env:
+          scheme: ${{ env.scheme }}
+          filetype: ${{ env.filetype }}
+          file_to_build: ${{ env.file_to_build }}
+        run: |
+          # Build the macOS target
+          xcodebuild clean build -scheme "$scheme" -"$filetype" "$file_to_build" -destination "platform=macOS" | xcpretty && exit ${PIPESTATUS[0]}
