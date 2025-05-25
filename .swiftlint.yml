@@ -1,0 +1,34 @@
+excluded:
+  - .build
+  - Carthage
+  - Pods
+  - fastlane
+  - vendor
+
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - identifier_name
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - fatal_error_message
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - legacy_random
+  - multiline_arguments
+  - multiline_parameters
+  - sorted_first_last
+  - vertical_parameter_alignment_on_call
+
+cyclomatic_complexity:
+  warning: 15
+
+function_body_length:
+  warning: 50
+  error: 100
+
+type_body_length:
+  warning: 300
+  error: 500
