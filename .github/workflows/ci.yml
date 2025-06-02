@@ -30,6 +30,8 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: macos-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         xcode-version: ['15.4', 'latest-stable']
@@ -117,6 +119,8 @@ jobs:
   build-spm:
     name: Swift Package Manager Build
     runs-on: macos-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
