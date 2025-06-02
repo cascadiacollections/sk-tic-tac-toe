@@ -6,7 +6,7 @@
 //
 
 import Testing
-@testable import tictactoe // Make sure this matches your app's target name
+@testable import TicTacToeCore // Import the SPM module
 
 @Suite
 final class GameLogicTests {
