@@ -1,8 +1,13 @@
 import Foundation
+
+#if canImport(os)
 import os.log // For logging
+#endif
 
 // Define a logger instance (adjust subsystem as needed)
+#if canImport(os)
 private let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp.tictactoe", category: "GameLogic")
+#endif
 
 /// Manages the logic for an n x n Tic-Tac-Toe game using bitboards.
 class GameLogic {
@@ -69,12 +74,16 @@ class GameLogic {
     /// - Returns: A new `GameLogic` instance, or `nil` if the board size is invalid.
     init?(boardSize: Int = 3) {
         guard boardSize >= 1 else {
+            #if canImport(os)
             os_log(.error, log: log, "Initialization failed: Board size %d must be at least 1.", boardSize)
+            #endif
             return nil
         }
         // Consider adding a practical upper limit if memory/Int size is a concern
         // guard boardSize <= 5 else { // Example: Max 5x5 for standard Int
+        //     #if canImport(os)
         //     os_log(.error, log: log, "Initialization failed: Board size %d too large.", boardSize)
+        //     #endif
         //     return nil
         // }
 
@@ -82,10 +91,14 @@ class GameLogic {
 
         // Generate/Cache winning patterns if not already done for this size
         if GameLogic.cachedWinningPatterns[boardSize] == nil {
+            #if canImport(os)
             os_log(.debug, log: log, "Generating and caching winning patterns for board size %d", boardSize)
+            #endif
             GameLogic.cachedWinningPatterns[boardSize] = GameLogic.generateWinningPatterns(boardSize: boardSize)
         }
-        os_log(.info, log: log, "GameLogic initialized with board size %d. Current player: %{public}@", boardSize, self.currentPlayer.symbol)
+        #if canImport(os)
+            os_log(.info, log: log, "GameLogic initialized with board size %d. Current player: %{public}@", boardSize, self.currentPlayer.symbol)
+            #endif
     }
 
     // MARK: - Public Methods
@@ -97,14 +110,20 @@ class GameLogic {
     /// - Returns: A `MoveOutcome` indicating the result of the move attempt.
     @discardableResult // Allow calling without using the return value if not needed
     func makeMove(row: Int, col: Int) -> MoveOutcome {
-        os_log(.debug, log: log, "Attempting move by %{public}@ at (%d, %d)", self.currentPlayer.symbol, row, col)
+        #if canImport(os)
+            os_log(.debug, log: log, "Attempting move by %{public}@ at (%d, %d)", self.currentPlayer.symbol, row, col)
+            #endif
 
         guard row >= 0 && row < boardSize && col >= 0 && col < boardSize else {
+            #if canImport(os)
             os_log(.info, log: log, "Move failed: Coordinates (%d, %d) out of bounds [0..<%d]", row, col, self.boardSize)
+            #endif
              return .failure_invalidCoordinates
         }
         guard gameState == .ongoing else {
+            #if canImport(os)
             os_log(.info, log: log, "Move failed: Game already over (state: %{public}@)", String(describing: self.gameState))
+            #endif
             return .failure_gameAlreadyOver
         }
 
@@ -113,32 +132,44 @@ class GameLogic {
 
         // Check if the position is already taken
         if (occupiedMask & moveBit) != 0 {
-             os_log(.info, log: log, "Move failed: Position (%d, %d) already taken.", row, col)
+             #if canImport(os)
+            os_log(.info, log: log, "Move failed: Position (%d, %d) already taken.", row, col)
+            #endif
             return .failure_positionTaken
         }
 
         // Place the mark on the appropriate bitboard
         if currentPlayer == .x {
             xBoard |= moveBit
-             os_log(.debug, log: log, "X placed at (%d, %d). xBoard: %d", row, col, xBoard)
+             #if canImport(os)
+            os_log(.debug, log: log, "X placed at (%d, %d). xBoard: %d", row, col, xBoard)
+            #endif
         } else {
             oBoard |= moveBit
-             os_log(.debug, log: log, "O placed at (%d, %d). oBoard: %d", row, col, oBoard)
+             #if canImport(os)
+            os_log(.debug, log: log, "O placed at (%d, %d). oBoard: %d", row, col, oBoard)
+            #endif
         }
 
         // Check for game end conditions
         let currentPlayerBoard = (currentPlayer == .x) ? xBoard : oBoard
         if checkWin(for: currentPlayerBoard) {
             gameState = .won(currentPlayer)
+            #if canImport(os)
             os_log(.info, log: log, "Game won by %{public}@", self.currentPlayer.symbol)
+            #endif
         } else if checkDraw() {
             gameState = .draw
+            #if canImport(os)
             os_log(.info, log: log, "Game ended in a draw.")
+            #endif
         } else {
             // Game continues, switch player
             _ = currentPlayer
             currentPlayer = currentPlayer.next
-             os_log(.debug, log: log, "Move successful. Next player: %{public}@", self.currentPlayer.symbol)
+             #if canImport(os)
+            os_log(.debug, log: log, "Move successful. Next player: %{public}@", self.currentPlayer.symbol)
+            #endif
         }
         return .success
     }
@@ -151,7 +182,9 @@ class GameLogic {
         currentPlayer = .x
         gameState = .ongoing
         winningPattern = nil // Clear the stored winning pattern
-        os_log(.info, log: log, "Game reset. Board size %d. Current player: %{public}@", self.boardSize, self.currentPlayer.symbol)
+        #if canImport(os)
+            os_log(.info, log: log, "Game reset. Board size %d. Current player: %{public}@", self.boardSize, self.currentPlayer.symbol)
+            #endif
     }
 
     /// Returns the coordinates of the cells forming the winning line, if the game has been won.
@@ -211,7 +244,9 @@ class GameLogic {
 
         guard totalSquares <= Int.bitWidth else {
              // Prevent overflow if boardSize is excessively large
+            #if canImport(os)
             os_log(.error, log: log, "Board size %d too large, exceeds Int bit width (%d)", boardSize, Int.bitWidth)
+            #endif
              // Depending on desired behavior, could return empty or crash
              return [] // Return empty to prevent incorrect calculations
         }
@@ -241,7 +276,9 @@ class GameLogic {
     private func checkWin(for playerBoard: Int) -> Bool {
         guard let patterns = GameLogic.cachedWinningPatterns[self.boardSize] else {
             // This should ideally not happen if init succeeded and caching worked
+            #if canImport(os)
             os_log(.error, log: log, "Consistency error: Winning patterns not found for board size %d", self.boardSize)
+            #endif
             assertionFailure("Winning patterns not found for board size \(self.boardSize)") // Crash in debug
             return false
         }
