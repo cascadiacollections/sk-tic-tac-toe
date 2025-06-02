@@ -39,7 +39,7 @@ final class GameLogicTests {
         // Use guard let to unwrap the failable initializer.
         // Explicitly fail the test if it returns nil.
         guard let logic = GameLogic(boardSize: 3) else {
-            #expect(false, "GameLogic should initialize successfully with size 3")
+            #expect(Bool(false), "GameLogic should initialize successfully with size 3")
             return // Stop the test if init fails
         }
 
@@ -56,7 +56,7 @@ final class GameLogicTests {
     @Test("Initial Game State Test (4x4)")
     func testInitialGameState4x4() {
         guard let logic = GameLogic(boardSize: 4) else {
-            #expect(false, "GameLogic should initialize successfully with size 4")
+            #expect(Bool(false), "GameLogic should initialize successfully with size 4")
             return
         }
 
@@ -81,7 +81,7 @@ final class GameLogicTests {
     @Test("Turn Switching Test")
     func testTurnSwitching() {
         guard let logic = GameLogic(boardSize: 3) else {
-            #expect(false, "GameLogic should initialize successfully")
+            #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
 
@@ -97,7 +97,7 @@ final class GameLogicTests {
     @Test("Invalid Move on Taken Position")
     func testInvalidMoveOnTakenPosition() {
         guard let logic = GameLogic(boardSize: 3) else {
-             #expect(false, "GameLogic should initialize successfully")
+             #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
 
@@ -114,7 +114,7 @@ final class GameLogicTests {
      @Test("Invalid Move Out of Bounds")
      func testInvalidMoveOutOfBounds() {
          guard let logic = GameLogic(boardSize: 3) else {
-              #expect(false, "GameLogic should initialize successfully")
+              #expect(Bool(false), "GameLogic should initialize successfully")
              return
          }
 
@@ -132,7 +132,7 @@ final class GameLogicTests {
     @Test("No Move After Game Ends")
     func testNoMoveAfterGameEnds() {
         guard let logic = GameLogic(boardSize: 3) else {
-             #expect(false, "GameLogic should initialize successfully")
+             #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
 
@@ -191,7 +191,7 @@ final class GameLogicTests {
     @Test("Win Condition Test for Player X (Rows, Cols, Diags)", arguments: xWinArguments) // Reference the static variable
     func testWinConditionX(moves: [(Int, Int)], expectedState: GameLogic.GameState, message: Comment) {
         guard let logic = GameLogic(boardSize: 3) else {
-             #expect(false, "GameLogic should initialize successfully")
+             #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
         makeMoves(logic, moves: moves)
@@ -202,7 +202,7 @@ final class GameLogicTests {
     func testWinConditionO(moves: [(Int, Int)], expectedState: GameLogic.GameState, message: Comment) {
         // Use the fully qualified type name GameLogic.GameState (already done in previous fix)
         guard let logic = GameLogic(boardSize: 3) else {
-             #expect(false, "GameLogic should initialize successfully")
+             #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
         makeMoves(logic, moves: moves)
@@ -215,7 +215,7 @@ final class GameLogicTests {
     @Test("Draw Condition Test on 3x3 Board")
     func testDrawConditionOn3x3Board() {
         guard let logic = GameLogic(boardSize: 3) else {
-             #expect(false, "GameLogic should initialize successfully")
+             #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
         // This sequence fills the board without a win
@@ -262,7 +262,7 @@ final class GameLogicTests {
     @Test("Win Condition on 4x4 Board (Row)")
     func testWinConditionFourByFourRow() {
         guard let logic = GameLogic(boardSize: 4) else {
-             #expect(false, "GameLogic should initialize successfully")
+             #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
         let moves: [(Int, Int)] = [
@@ -284,7 +284,7 @@ final class GameLogicTests {
      @Test("Win Condition on 4x4 Board (Diagonal)")
      func testWinConditionFourByFourDiagonal() {
          guard let logic = GameLogic(boardSize: 4) else {
-              #expect(false, "GameLogic should initialize successfully")
+              #expect(Bool(false), "GameLogic should initialize successfully")
              return
          }
          let moves: [(Int, Int)] = [
@@ -308,7 +308,7 @@ final class GameLogicTests {
     @Test("Smallest Possible Board - 1x1")
     func testSmallestPossibleBoard() {
         guard let logic = GameLogic(boardSize: 1) else {
-             #expect(false, "GameLogic should initialize successfully with size 1")
+             #expect(Bool(false), "GameLogic should initialize successfully with size 1")
             return
         }
         // On a 1x1 board, the first move wins immediately
@@ -326,7 +326,7 @@ final class GameLogicTests {
     @Test("Reset Game Test")
     func testReset() {
         guard let logic = GameLogic(boardSize: 3) else {
-             #expect(false, "GameLogic should initialize successfully")
+             #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
 
@@ -360,7 +360,7 @@ final class GameLogicTests {
     @Test("GetPlayerAt and GetWinningPatternCoordinates Tests")
     func testGetters() {
          guard let logic = GameLogic(boardSize: 3) else {
-              #expect(false, "GameLogic should initialize successfully")
+              #expect(Bool(false), "GameLogic should initialize successfully")
              return
          }
 
@@ -396,7 +396,7 @@ final class GameLogicTests {
 
          // Setup a win for O (different pattern)
          guard let logicO = GameLogic(boardSize: 3) else {
-              #expect(false, "GameLogic should initialize successfully for O win test")
+              #expect(Bool(false), "GameLogic should initialize successfully for O win test")
              return
          }
          _ = logicO.makeMove(row: 0, col: 0) // X

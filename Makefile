@@ -116,6 +116,11 @@ install-hooks: ## Install Git pre-commit hooks
 	@cp .devcontainer/setup.sh .git/hooks/pre-commit || echo "Setup script not found"
 	@chmod +x .git/hooks/pre-commit
 
+# Performance benchmarking
+benchmark: ## Run performance benchmarks
+	@echo "🚀 Running performance benchmarks..."
+	@swift scripts/benchmark.swift
+
 # Development commands
 dev: ## Start development mode (format, lint, test)
 	@make format

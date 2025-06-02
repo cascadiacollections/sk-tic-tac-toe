@@ -122,6 +122,24 @@ swift test
 xcodebuild test -scheme "tictactoe iOS" -destination "platform=iOS Simulator,name=iPhone 15"
 ```
 
+### ⚡ Performance Benchmarking
+
+Run performance benchmarks to analyze game logic efficiency:
+
+```bash
+# Run performance benchmarks
+make benchmark
+
+# Or run directly
+swift scripts/benchmark.swift
+```
+
+The benchmarks test:
+- Game logic initialization performance
+- Move making efficiency
+- Large board scaling
+- Reset operation speed
+
 ### 🔍 Code Quality
 
 Maintain code quality with the included tools:
@@ -145,6 +163,16 @@ The project includes comprehensive GitHub Actions workflows:
 - **Security Scanning**: CodeQL analysis and dependency review
 - **Quality Gates**: SwiftLint validation and formatting checks
 - **Matrix Testing**: Multiple Xcode and Swift versions
+- **Automated Updates**: Dependabot for dependency management
+
+### 🔄 Dependency Management
+
+Dependencies are automatically monitored and updated via Dependabot:
+
+- **GitHub Actions**: Weekly updates for workflow dependencies
+- **Swift Packages**: Weekly updates for any external Swift dependencies  
+- **Docker**: Weekly updates for DevContainer base images
+- **Security**: Automatic security updates and vulnerability scanning
 
 ## Contributing
 
