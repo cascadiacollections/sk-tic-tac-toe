@@ -1,0 +1,20 @@
+# This is a CODEOWNERS file to define individuals or teams responsible for code in this repository
+# Each line is a file pattern followed by one or more owners
+
+# These owners will be the default owners for everything in the repo
+* @KevinTCoughlin
+
+# Swift files in the shared directory
+/tictactoe\ Shared/ @KevinTCoughlin
+
+# iOS specific files
+/tictactoe\ iOS/ @KevinTCoughlin
+
+# macOS specific files
+/tictactoe\ macOS/ @KevinTCoughlin
+
+# Tests
+/TicTacToeTests/ @KevinTCoughlin
+
+# GitHub specific files
+/.github/ @KevinTCoughlin

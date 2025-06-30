@@ -1,0 +1,67 @@
+{
+    "name": "Swift TicTacToe Development",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "args": {
+            "VARIANT": "5.10"
+        }
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {
+            "version": "latest",
+            "ppa": true
+        },
+        "ghcr.io/devcontainers/features/github-cli:1": {
+            "version": "latest"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "sswg.swift-lang",
+                "vadimcn.vscode-lldb",
+                "eamodio.gitlens",
+                "ms-azuretools.vscode-docker",
+                "GitHub.copilot",
+                "GitHub.copilot-chat",
+                "ms-vscode.vscode-json",
+                "redhat.vscode-yaml",
+                "ms-vscode.vscode-markdown-preview-enhanced",
+                "davidanson.vscode-markdownlint",
+                "ms-vscode.test-adapter-converter",
+                "hbenl.vscode-test-explorer"
+            ],
+            "settings": {
+                "lldb.library": "/usr/lib/liblldb.so",
+                "swift.path.swift_driver_bin": "/usr/bin/swift",
+                "editor.formatOnSave": true,
+                "editor.formatOnPaste": true,
+                "editor.codeActionsOnSave": {
+                    "source.organizeImports": "explicit"
+                },
+                "editor.rulers": [120],
+                "files.trimTrailingWhitespace": true,
+                "files.insertFinalNewline": true,
+                "files.trimFinalNewlines": true,
+                "git.autofetch": true,
+                "git.enableSmartCommit": true,
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "workbench.colorTheme": "Default Dark+",
+                "explorer.confirmDragAndDrop": false,
+                "explorer.confirmDelete": false
+            }
+        }
+    },
+    "remoteUser": "vscode",
+    "postCreateCommand": "bash .devcontainer/setup.sh",
+    "forwardPorts": [8080],
+    "portsAttributes": {
+        "8080": {
+            "label": "Development Server",
+            "onAutoForward": "notify"
+        }
+    },
+    "mounts": [
+        "source=${localWorkspaceFolder}/.git,target=/workspace/.git,type=bind"
+    ]
+}
