@@ -1,37 +1,35 @@
-//
-//  GameViewController.swift
-//  tictactoe macOS
-//
-//  Created by Kevin T. Coughlin on 6/10/24.
-//
-
-import Cocoa
+import UIKit
 import SpriteKit
-import GameplayKit
-import Foundation
 
-enum DevTools {
-    static func run(_ block: () -> Void) {
-        #if DEBUG
-        block()
-        #endif
-    }
-}
+@MainActor
+class GameViewController: UIViewController {
 
-class GameViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        let scene = GameScene.init(boardSize: 3, size: view.bounds.size)
-        let skView = self.view as! SKView
 
-        skView.presentScene(scene)
-        skView.ignoresSiblingOrder = true
+        if let skView = view as? SKView {
+            let viewSize = skView.bounds.size
+            print("SKView bounds size: \(viewSize)")
 
-        DevTools.run {
+            let scene = GameScene(size: viewSize)
+            scene.scaleMode = SKSceneScaleMode.aspectFill
+            skView.presentScene(scene)
+            skView.ignoresSiblingOrder = true
+
+            #if DEBUG
             skView.showsFPS = true
             skView.showsNodeCount = true
-            skView.showsPhysics = true
+            #endif
+
+        } else {
+            print("ERROR: self.view is not an SKView. Check Storyboard or view setup.")
         }
     }
+
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        UIDevice.current.userInterfaceIdiom == .phone ? .allButUpsideDown : .all
+    }
+
+    override var prefersStatusBarHidden: Bool { true }
 }
+
