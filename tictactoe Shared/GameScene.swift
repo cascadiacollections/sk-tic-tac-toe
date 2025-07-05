@@ -189,7 +189,7 @@ class GameScene: SKScene {
 
     // MARK: - Game State Updates
 
-    private func updateTile(row: Int, col: Int, player: GameLogic.Player) {
+    private func updateTile(row: Int, col: Int, player: Player) {
         guard row >= 0, row < boardSize, col >= 0, col < boardSize,
               let cellNode = cellNodes[row][col] else {
             os_log(.error, log: sceneLog, "Attempted to update tile at invalid index (%d, %d)", row, col)
@@ -200,8 +200,8 @@ class GameScene: SKScene {
         symbolLabel.fontSize = cellSize * 0.6
         symbolLabel.fontColor = player == .x ? GameColor.red : GameColor.blue
         symbolLabel.fontName = "HelveticaNeue-Bold"
-        symbolLabel.verticalAlignmentMode = .center
-        symbolLabel.horizontalAlignmentMode = .center
+        symbolLabel.verticalAlignmentMode = SKLabelVerticalAlignmentMode.center
+        symbolLabel.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.center
         symbolLabel.position = CGPoint(x: 0, y: 0)
         cellNode.addChild(symbolLabel)
         os_log(.debug, log: sceneLog, "Updated tile (%d, %d) with symbol %{public}@", row, col, player.symbol)
@@ -222,7 +222,7 @@ class GameScene: SKScene {
         }
     }
 
-    private func displayWinningLine(for player: GameLogic.Player) {
+    private func displayWinningLine(for player: Player) {
         winningLineNode?.removeFromParent()
         winningLineNode = nil
 
@@ -344,4 +344,3 @@ class GameScene: SKScene {
         }
     }
 }
-

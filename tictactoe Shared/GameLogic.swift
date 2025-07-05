@@ -1,92 +1,100 @@
 import Foundation
-
 #if canImport(os)
 import os.log
 #endif
 
-#if canImport(os)
-private let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp.tictactoe", category: "GameLogic")
-#endif
+public enum Player: Int, CaseIterable {
+    case x = 1, o
+    public var symbol: String { ["❌", "⭕"][rawValue - 1] }
+    public var next: Player { self == .x ? .o : .x }
+}
 
-class GameLogic {
+public enum GameState: Equatable {
+    case ongoing
+    case won(Player)
+    case draw
 
-    enum Player: Int, CaseIterable {
-        case x = 1, o
-        var symbol: String { ["❌", "⭕"][rawValue - 1] }
-        var next: Player { self == .x ? .o : .x }
-    }
-
-    enum GameState: Equatable {
-        case ongoing
-        case won(Player)
-        case draw
-
-        static func == (lhs: GameState, rhs: GameState) -> Bool {
-            switch (lhs, rhs) {
-            case (.ongoing, .ongoing), (.draw, .draw):
-                return true
-            case (.won(let player1), .won(let player2)):
-                return player1 == player2
-            default:
-                return false
-            }
+    public static func == (lhs: GameState, rhs: GameState) -> Bool {
+        switch (lhs, rhs) {
+        case (.ongoing, .ongoing), (.draw, .draw):
+            return true
+        case (.won(let player1), .won(let player2)):
+            return player1 == player2
+        default:
+            return false
         }
     }
+}
 
-    enum MoveOutcome: Equatable {
-        case success
-        case failure_positionTaken
-        case failure_invalidCoordinates
-        case failure_gameAlreadyOver
-    }
+public enum MoveOutcome: Equatable {
+    case success
+    case failure_positionTaken
+    case failure_invalidCoordinates
+    case failure_gameAlreadyOver
+}
 
-    let boardSize: Int
-    private(set) var currentPlayer: Player = .x
-    private(set) var gameState: GameState = .ongoing
+/// Encapsulates the logic for a Tic Tac Toe game on an NxN board.
+public final class GameLogic {
+
+    #if canImport(os)
+    private static let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp.tictactoe", category: "GameLogic")
+    #endif
+
+    /// The size of the board (NxN).
+    public let boardSize: Int
+
+    /// The player who has the current turn.
+    public private(set) var currentPlayer: Player = .x
+
+    /// The current state of the game.
+    public private(set) var gameState: GameState = .ongoing
 
     private var xBoard = 0
     private var oBoard = 0
 
-    private(set) static var cachedWinningPatterns: [Int: [Int]] = [:]
+    /// Cached winning patterns for different board sizes.
+    public private(set) static var cachedWinningPatterns: [Int: [Int]] = [:]
+
     private var winningPattern: Int?
 
-    init?(boardSize: Int = 3) {
+    private enum LogLevel: String {
+        case debug = "DEBUG"
+        case info = "INFO"
+        case error = "ERROR"
+    }
+
+    /// Creates a new game logic instance for a board of the specified size.
+    /// - Parameter boardSize: Size of the board (NxN). Must be at least 1.
+    public init?(boardSize: Int = 3) {
+        self.boardSize = boardSize
+
         guard boardSize >= 1 else {
-            #if canImport(os)
-            os_log(.error, log: log, "Initialization failed: Board size %d must be at least 1.", boardSize)
-            #endif
+            self.log(.error, "Initialization failed: Board size \(boardSize) must be at least 1.")
             return nil
         }
 
-        self.boardSize = boardSize
-
         if GameLogic.cachedWinningPatterns[boardSize] == nil {
-            #if canImport(os)
-            os_log(.debug, log: log, "Generating and caching winning patterns for board size %d", boardSize)
-            #endif
+            self.log(.debug, "Generating and caching winning patterns for board size \(boardSize)")
             GameLogic.cachedWinningPatterns[boardSize] = GameLogic.generateWinningPatterns(boardSize: boardSize)
         }
-        #if canImport(os)
-        os_log(.info, log: log, "GameLogic initialized with board size %d. Current player: %{public}@", boardSize, self.currentPlayer.symbol)
-        #endif
+        self.log(.info, "GameLogic initialized with board size \(boardSize). Current player: \(self.currentPlayer.symbol)")
     }
 
+    /// Attempts to make a move at the specified board coordinates.
+    /// - Parameters:
+    ///   - row: The row index (0-based).
+    ///   - col: The column index (0-based).
+    /// - Returns: `MoveOutcome` indicating success or failure reason.
     @discardableResult
-    func makeMove(row: Int, col: Int) -> MoveOutcome {
-        #if canImport(os)
-        os_log(.debug, log: log, "Attempting move by %{public}@ at (%d, %d)", self.currentPlayer.symbol, row, col)
-        #endif
+    public func makeMove(row: Int, col: Int) -> MoveOutcome {
+        self.log(.debug, "Attempting move by \(self.currentPlayer.symbol) at (\(row), \(col))")
 
         guard row >= 0, row < boardSize, col >= 0, col < boardSize else {
-            #if canImport(os)
-            os_log(.info, log: log, "Move failed: Coordinates (%d, %d) out of bounds [0..<%d]", row, col, self.boardSize)
-            #endif
+            self.log(.info, "Move failed: Coordinates (\(row), \(col)) out of bounds [0..<\(self.boardSize)]")
             return .failure_invalidCoordinates
         }
         guard gameState == .ongoing else {
-            #if canImport(os)
-            os_log(.info, log: log, "Move failed: Game already over (state: %{public}@)", String(describing: self.gameState))
-            #endif
+            self.log(.info, "Move failed: Game already over (state: \(String(describing: self.gameState)))")
             return .failure_gameAlreadyOver
         }
 
@@ -94,56 +102,45 @@ class GameLogic {
         let occupiedMask = xBoard | oBoard
 
         if (occupiedMask & moveBit) != 0 {
-            #if canImport(os)
-            os_log(.info, log: log, "Move failed: Position (%d, %d) already taken.", row, col)
-            #endif
+            self.log(.info, "Move failed: Position (\(row), \(col)) already taken.")
             return .failure_positionTaken
         }
 
         if currentPlayer == .x {
             xBoard |= moveBit
-            #if canImport(os)
-            os_log(.debug, log: log, "X placed at (%d, %d). xBoard: %d", row, col, xBoard)
-            #endif
+            self.log(.debug, "X placed at (\(row), \(col)). xBoard: \(xBoard)")
         } else {
             oBoard |= moveBit
-            #if canImport(os)
-            os_log(.debug, log: log, "O placed at (%d, %d). oBoard: %d", row, col, oBoard)
-            #endif
+            self.log(.debug, "O placed at (\(row), \(col)). oBoard: \(oBoard)")
         }
 
         let currentPlayerBoard = (currentPlayer == .x) ? xBoard : oBoard
         if checkWin(for: currentPlayerBoard) {
             gameState = .won(currentPlayer)
-            #if canImport(os)
-            os_log(.info, log: log, "Game won by %{public}@", self.currentPlayer.symbol)
-            #endif
+            self.log(.info, "Game won by \(self.currentPlayer.symbol)")
         } else if checkDraw() {
             gameState = .draw
-            #if canImport(os)
-            os_log(.info, log: log, "Game ended in a draw.")
-            #endif
+            self.log(.info, "Game ended in a draw.")
         } else {
             currentPlayer = currentPlayer.next
-            #if canImport(os)
-            os_log(.debug, log: log, "Move successful. Next player: %{public}@", self.currentPlayer.symbol)
-            #endif
+            self.log(.debug, "Move successful. Next player: \(self.currentPlayer.symbol)")
         }
         return .success
     }
 
-    func reset() {
+    /// Resets the game to its initial state.
+    public func reset() {
         xBoard = 0
         oBoard = 0
         currentPlayer = .x
         gameState = .ongoing
         winningPattern = nil
-        #if canImport(os)
-        os_log(.info, log: log, "Game reset. Board size %d. Current player: %{public}@", self.boardSize, self.currentPlayer.symbol)
-        #endif
+        self.log(.info, "Game reset. Board size \(self.boardSize). Current player: \(self.currentPlayer.symbol)")
     }
 
-    func getWinningPatternCoordinates() -> [(row: Int, col: Int)]? {
+    /// Returns the coordinates of the winning pattern if the game is won.
+    /// - Returns: Array of `(row, col)` tuples representing the winning line, or `nil` if no winner.
+    public func getWinningPatternCoordinates() -> [(row: Int, col: Int)]? {
         guard case .won = gameState, let pattern = winningPattern else {
             return nil
         }
@@ -155,7 +152,12 @@ class GameLogic {
         return coordinates.sorted { ($0.row * boardSize + $0.col) < ($1.row * boardSize + $1.col) }
     }
 
-    func getPlayerAt(row: Int, col: Int) -> Player? {
+    /// Returns the player at the specified board position.
+    /// - Parameters:
+    ///   - row: The row index (0-based).
+    ///   - col: The column index (0-based).
+    /// - Returns: The `Player` at the position, or `nil` if empty or out of bounds.
+    public func getPlayerAt(row: Int, col: Int) -> Player? {
         guard row >= 0, row < boardSize, col >= 0, col < boardSize else {
             return nil
         }
@@ -169,6 +171,14 @@ class GameLogic {
         }
     }
 
+    /// Access the player at the specified position via subscript syntax.
+    /// - Parameters:
+    ///   - row: The row index (0-based).
+    ///   - col: The column index (0-based).
+    public subscript(row: Int, col: Int) -> Player? {
+        return getPlayerAt(row: row, col: col)
+    }
+
     private func positionToBit(row: Int, col: Int) -> Int {
         1 << (row * boardSize + col)
     }
@@ -178,9 +188,7 @@ class GameLogic {
         let totalSquares = boardSize * boardSize
 
         guard totalSquares <= Int.bitWidth else {
-            #if canImport(os)
-            os_log(.error, log: log, "Board size %d too large, exceeds Int bit width (%d)", boardSize, Int.bitWidth)
-            #endif
+            logStatic(.error, "Board size \(boardSize) too large, exceeds Int bit width (\(Int.bitWidth))")
             return []
         }
 
@@ -198,9 +206,7 @@ class GameLogic {
 
     private func checkWin(for playerBoard: Int) -> Bool {
         guard let patterns = GameLogic.cachedWinningPatterns[self.boardSize] else {
-            #if canImport(os)
-            os_log(.error, log: log, "Consistency error: Winning patterns not found for board size %d", self.boardSize)
-            #endif
+            self.log(.error, "Consistency error: Winning patterns not found for board size \(self.boardSize)")
             assertionFailure("Winning patterns not found for board size \(self.boardSize)")
             return false
         }
@@ -220,5 +226,43 @@ class GameLogic {
 
         let fullBoard = (1 << totalSquares) - 1
         return (xBoard | oBoard) == fullBoard
+    }
+
+    // MARK: - Logging
+
+    private func log(_ level: LogLevel, _ message: String) {
+        #if canImport(os)
+        os_log("%{public}@ - %{public}@", log: Self.log, type: osLogType(for: level), level.rawValue, message)
+        #else
+        print("[\(level.rawValue)] \(message)")
+        #endif
+    }
+
+    private static func logStatic(_ level: LogLevel, _ message: String) {
+        #if canImport(os)
+        os_log("%{public}@ - %{public}@", log: log, type: osLogType(for: level), level.rawValue, message)
+        #else
+        print("[\(level.rawValue)] \(message)")
+        #endif
+    }
+
+    private static func osLogType(for level: LogLevel) -> OSLogType {
+        #if canImport(os)
+        switch level {
+        case .debug:
+            return .debug
+        case .info:
+            return .info
+        case .error:
+            return .error
+        }
+        #else
+        // Dummy fallback, won't be used without os imported
+        fatalError("osLogType called without os module")
+        #endif
+    }
+
+    private func osLogType(for level: LogLevel) -> OSLogType {
+        return Self.osLogType(for: level)
     }
 }
