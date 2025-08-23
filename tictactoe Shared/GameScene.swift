@@ -1,31 +1,27 @@
+//
+//  GameScene.swift
+//  TicTacToe
+//
+//  Created by YourName on Date.
+//
+//  This scene manages the Tic Tac Toe game board rendering, user interaction, and game state updates.
+//  It handles drawing the board grid, processing player moves, displaying game results, and resetting the game.
+//
+
 import SpriteKit
-import os.log // Use logging
-
-#if os(iOS)
-import UIKit
-typealias GameColor = UIColor
-typealias GameEvent = UIEvent // For touch/mouse event parameter consistency
-typealias GameTouchEvent = UITouch
-#elseif os(macOS)
-import AppKit
-typealias GameColor = NSColor
-typealias GameEvent = NSEvent
-typealias GameTouchEvent = NSEvent // macOS uses NSEvent directly for mouse down
-#endif
-
-// Logger for the scene
-private let sceneLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp.tictactoe", category: "GameScene")
+import os.log
 
 @MainActor
 class GameScene: SKScene {
 
     // MARK: - Properties
 
+    private(set) var boardNode: SKNode! // Node to hold all board elements for easy clearing/scaling
+    private(set) var cellNodes: [[SKSpriteNode?]] = [] // Store references to cell nodes if needed later
+    private(set) var winningLineNode: SKShapeNode? // Reference to the winning line to remove on reset
+
     private let boardSize: Int
     private(set) var gameLogic: GameLogic
-    private var boardNode: SKNode! // Node to hold all board elements for easy clearing/scaling
-    private var cellNodes: [[SKSpriteNode?]] = [] // Store references to cell nodes if needed later
-    private var winningLineNode: SKShapeNode? // Reference to the winning line to remove on reset
 
     private(set) var cellSize: CGFloat = 0
     private(set) var boardOriginOffset: CGPoint = .zero
@@ -34,11 +30,13 @@ class GameScene: SKScene {
         gameLogic.gameState != .ongoing
     }
 
+    private static let sceneLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp.tictactoe", category: "GameScene")
+
     // MARK: - Initialization
 
     init?(boardSize: Int = 3, size: CGSize) {
         guard let logic = GameLogic(boardSize: boardSize) else {
-            os_log(.error, log: sceneLog, "Failed to initialize GameLogic for board size %d", boardSize)
+            os_log(.error, log: GameScene.sceneLog, "Failed to initialize GameLogic for board size %d", boardSize)
             return nil
         }
         self.boardSize = boardSize
@@ -62,7 +60,7 @@ class GameScene: SKScene {
     // MARK: - Scene Lifecycle
 
     override func didMove(to view: SKView) {
-        os_log(.debug, log: sceneLog, "GameScene didMove to view. Size: %@", NSCoder.string(for: size))
+        os_log(.debug, log: GameScene.sceneLog, "GameScene didMove to view. Size: %@", NSCoder.string(for: size))
         setupBoard()
     }
 
@@ -82,7 +80,7 @@ class GameScene: SKScene {
 
     private func calculateBoardLayout() {
         cellSize = min(size.width, size.height) * 0.9 / CGFloat(boardSize)
-        os_log(.debug, log: sceneLog, "Calculated cell size: %.2f", cellSize)
+        os_log(.debug, log: GameScene.sceneLog, "Calculated cell size: %.2f", cellSize)
 
         let boardWidth = cellSize * CGFloat(boardSize)
         let boardHeight = cellSize * CGFloat(boardSize)
@@ -91,7 +89,7 @@ class GameScene: SKScene {
         let yOffset = -boardHeight / 2
         boardOriginOffset = CGPoint(x: xOffset, y: yOffset)
 
-        os_log(.debug, log: sceneLog, "Board origin offset: %@", NSCoder.string(for: boardOriginOffset))
+        os_log(.debug, log: GameScene.sceneLog, "Board origin offset: %@", NSCoder.string(for: boardOriginOffset))
     }
 
     private func drawBoardGrid() {
@@ -105,16 +103,14 @@ class GameScene: SKScene {
                 boardNode.addChild(cellNode)
                 cellNodes[row][col] = cellNode
 
-                let border = SKShapeNode(rect: CGRect(x: -cellSize / 2, y: -cellSize / 2, width: cellSize, height: cellSize), cornerRadius: cellSize * 0.05)
-                border.strokeColor = GameColor.lightGray
-                border.lineWidth = 1.5
+                let border = makeCellBorderNode()
                 cellNode.addChild(border)
             }
         }
-        os_log(.debug, log: sceneLog, "Board grid drawn.")
+        os_log(.debug, log: GameScene.sceneLog, "Board grid drawn.")
     }
 
-    // MARK: - Coordinate Calculation Helper
+    // MARK: - Coordinate Calculation Helpers
 
     private func position(forRow row: Int, col: Int) -> CGPoint {
         let x = boardOriginOffset.x + CGFloat(col) * cellSize + cellSize / 2
@@ -128,7 +124,7 @@ class GameScene: SKScene {
         let boardRect = CGRect(origin: boardOriginOffset, size: CGSize(width: boardWidth, height: boardHeight))
 
         guard boardRect.contains(location) else {
-            os_log(.debug, log: sceneLog, "Touch location %@ outside board rect %@", NSCoder.string(for: location), NSCoder.string(for: boardRect))
+            os_log(.debug, log: GameScene.sceneLog, "Touch location %@ outside board rect %@", NSCoder.string(for: location), NSCoder.string(for: boardRect))
             return nil
         }
 
@@ -155,19 +151,19 @@ class GameScene: SKScene {
     #endif
 
     private func handleInteraction(at location: CGPoint) {
-        os_log(.debug, log: sceneLog, "Interaction at: %@", NSCoder.string(for: location))
+        os_log(.debug, log: GameScene.sceneLog, "Interaction at: %@", NSCoder.string(for: location))
 
         if isGameOver {
-            os_log(.debug, log: sceneLog, "Game is over. Handling game over tap.")
+            os_log(.debug, log: GameScene.sceneLog, "Game is over. Handling game over tap.")
             handleGameOverTap()
             return
         }
 
         guard let (row, col) = cellCoordinates(from: location) else {
-            os_log(.debug, log: sceneLog, "Interaction location does not map to a cell.")
+            os_log(.debug, log: GameScene.sceneLog, "Interaction location does not map to a cell.")
             return
         }
-        os_log(.debug, log: sceneLog, "Mapped interaction to cell: (%d, %d)", row, col)
+        os_log(.debug, log: GameScene.sceneLog, "Mapped interaction to cell: (%d, %d)", row, col)
 
         let playerMakingMove = gameLogic.currentPlayer
 
@@ -175,15 +171,15 @@ class GameScene: SKScene {
 
         switch moveOutcome {
         case .success:
-            os_log(.info, log: sceneLog, "Move successful for %{public}@ at (%d, %d)", playerMakingMove.symbol, row, col)
+            os_log(.info, log: GameScene.sceneLog, "Move successful for %{public}@ at (%d, %d)", playerMakingMove.symbol, row, col)
             updateTile(row: row, col: col, player: playerMakingMove)
             checkGameState()
         case .failure_positionTaken:
-            os_log(.debug, log: sceneLog, "Move failed: Position (%d, %d) taken.", row, col)
+            os_log(.debug, log: GameScene.sceneLog, "Move failed: Position (%d, %d) taken.", row, col)
         case .failure_invalidCoordinates:
-            os_log(.error, log: sceneLog, "Move failed: Invalid coordinates (%d, %d) reported by logic, but interaction was mapped.", row, col)
+            os_log(.error, log: GameScene.sceneLog, "Move failed: Invalid coordinates (%d, %d) reported by logic, but interaction was mapped.", row, col)
         case .failure_gameAlreadyOver:
-            os_log(.debug, log: sceneLog, "Move failed: Game already over, but check was bypassed?")
+            os_log(.debug, log: GameScene.sceneLog, "Move failed: Game already over, but check was bypassed?")
         }
     }
 
@@ -192,7 +188,7 @@ class GameScene: SKScene {
     private func updateTile(row: Int, col: Int, player: Player) {
         guard row >= 0, row < boardSize, col >= 0, col < boardSize,
               let cellNode = cellNodes[row][col] else {
-            os_log(.error, log: sceneLog, "Attempted to update tile at invalid index (%d, %d)", row, col)
+            os_log(.error, log: GameScene.sceneLog, "Attempted to update tile at invalid index (%d, %d)", row, col)
             return
         }
 
@@ -204,20 +200,20 @@ class GameScene: SKScene {
         symbolLabel.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.center
         symbolLabel.position = CGPoint(x: 0, y: 0)
         cellNode.addChild(symbolLabel)
-        os_log(.debug, log: sceneLog, "Updated tile (%d, %d) with symbol %{public}@", row, col, player.symbol)
+        os_log(.debug, log: GameScene.sceneLog, "Updated tile (%d, %d) with symbol %{public}@", row, col, player.symbol)
     }
 
     private func checkGameState() {
         switch gameLogic.gameState {
         case .won(let winner):
-            os_log(.info, log: sceneLog, "Game won by %{public}@", winner.symbol)
+            os_log(.info, log: GameScene.sceneLog, "Game won by %{public}@", winner.symbol)
             displayWinningLine(for: winner)
             displayGameOverMessage("Player \(winner.symbol) Wins!")
         case .draw:
-            os_log(.info, log: sceneLog, "Game ended in a draw.")
+            os_log(.info, log: GameScene.sceneLog, "Game ended in a draw.")
             displayGameOverMessage("It's a Draw!")
         case .ongoing:
-            os_log(.debug, log: sceneLog, "Game ongoing. Next player: %{public}@", gameLogic.currentPlayer.symbol)
+            os_log(.debug, log: GameScene.sceneLog, "Game ongoing. Next player: %{public}@", gameLogic.currentPlayer.symbol)
             break
         }
     }
@@ -230,7 +226,7 @@ class GameScene: SKScene {
               winningCoordinates.count == boardSize,
               let startCoord = winningCoordinates.first,
               let endCoord = winningCoordinates.last else {
-            os_log(.error, log: sceneLog, "Could not get valid winning pattern coordinates for winner %{public}@", player.symbol)
+            os_log(.error, log: GameScene.sceneLog, "Could not get valid winning pattern coordinates for winner %{public}@", player.symbol)
             return
         }
 
@@ -277,7 +273,7 @@ class GameScene: SKScene {
         boardNode.addChild(lineNode)
 
         winningLineNode = lineNode
-        os_log(.debug, log: sceneLog, "Displayed winning line from %@ to %@", NSCoder.string(for: adjustedStart), NSCoder.string(for: adjustedEnd))
+        os_log(.debug, log: GameScene.sceneLog, "Displayed winning line from %@ to %@", NSCoder.string(for: adjustedStart), NSCoder.string(for: adjustedEnd))
     }
 
     private func displayGameOverMessage(_ message: String) {
@@ -297,7 +293,7 @@ class GameScene: SKScene {
         addChild(background)
 
         addChild(messageLabel)
-        os_log(.info, log: sceneLog, "Displayed game over message: '%{public}@'", message)
+        os_log(.info, log: GameScene.sceneLog, "Displayed game over message: '%{public}@'", message)
 
         let resetLabel = SKLabelNode(text: "Tap to play again")
         resetLabel.fontSize = size.height * 0.04
@@ -312,9 +308,11 @@ class GameScene: SKScene {
     // MARK: - Game Reset
 
     private func handleGameOverTap() {
-        os_log(.info, log: sceneLog, "Game over tap detected. Resetting game.")
-        resetGame()
+        os_log(.info, log: GameScene.sceneLog, "Game over tap detected. Resetting game.")
+        self.resetGame()
     }
+
+    // MARK: - Public API
 
     func resetGame() {
         gameLogic.reset()
@@ -328,14 +326,19 @@ class GameScene: SKScene {
         for row in 0..<boardSize {
             for col in 0..<boardSize {
                 cellNodes[row][col]?.removeAllChildren()
-                let border = SKShapeNode(rect: CGRect(x: -cellSize / 2, y: -cellSize / 2, width: cellSize, height: cellSize), cornerRadius: cellSize * 0.05)
-                border.strokeColor = GameColor.lightGray
-                border.lineWidth = 1.5
+                let border = makeCellBorderNode()
                 cellNodes[row][col]?.addChild(border)
             }
         }
 
-        os_log(.info, log: sceneLog, "Game has been reset.")
+        os_log(.info, log: GameScene.sceneLog, "Game has been reset.")
+    }
+
+    private func makeCellBorderNode() -> SKShapeNode {
+        let border = SKShapeNode(rect: CGRect(x: -cellSize / 2, y: -cellSize / 2, width: cellSize, height: cellSize), cornerRadius: cellSize * 0.05)
+        border.strokeColor = GameColor.lightGray
+        border.lineWidth = 1.5
+        return border
     }
 
     private func removeNode(withName name: String) {
@@ -344,3 +347,18 @@ class GameScene: SKScene {
         }
     }
 }
+
+// MARK: - Platform Abstractions
+
+#if os(iOS)
+import UIKit
+typealias GameColor = UIColor
+typealias GameEvent = UIEvent // For touch/mouse event parameter consistency
+typealias GameTouchEvent = UITouch
+#elseif os(macOS)
+import AppKit
+typealias GameColor = NSColor
+typealias GameEvent = NSEvent
+typealias GameTouchEvent = NSEvent // macOS uses NSEvent directly for mouse down
+#endif
+
