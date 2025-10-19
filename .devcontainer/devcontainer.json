@@ -48,12 +48,30 @@
                 "terminal.integrated.defaultProfile.linux": "bash",
                 "workbench.colorTheme": "Default Dark+",
                 "explorer.confirmDragAndDrop": false,
-                "explorer.confirmDelete": false
+                "explorer.confirmDelete": false,
+                "github.copilot.enable": {
+                    "*": true,
+                    "yaml": true,
+                    "plaintext": true,
+                    "markdown": true,
+                    "swift": true
+                }
+            }
+        },
+        "codespaces": {
+            "repositories": {
+                "cascadiacollections/sk-tic-tac-toe": {
+                    "permissions": {
+                        "contents": "write",
+                        "pull_requests": "write"
+                    }
+                }
             }
         }
     },
     "remoteUser": "vscode",
     "postCreateCommand": "bash .devcontainer/setup.sh",
+    "postStartCommand": "echo '🎮 TicTacToe development environment ready! Type `make help` to see available commands.'",
     "forwardPorts": [8080],
     "portsAttributes": {
         "8080": {
@@ -63,5 +81,9 @@
     },
     "mounts": [
         "source=${localWorkspaceFolder}/.git,target=/workspace/.git,type=bind"
-    ]
+    ],
+    "containerEnv": {
+        "CODESPACES": "${env:CODESPACES}",
+        "CODESPACE_NAME": "${env:CODESPACE_NAME}"
+    }
 }

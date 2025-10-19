@@ -1,0 +1,16 @@
+{
+    "recommendations": [
+        "sswg.swift-lang",
+        "vadimcn.vscode-lldb",
+        "eamodio.gitlens",
+        "ms-azuretools.vscode-docker",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "davidanson.vscode-markdownlint",
+        "ms-vscode.test-adapter-converter",
+        "hbenl.vscode-test-explorer"
+    ],
+    "unwantedRecommendations": []
+}
