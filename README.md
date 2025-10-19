@@ -43,6 +43,24 @@ open tictactoe.xcodeproj
 
 3. **Build and run** on your preferred device or simulator (⌘+R)
 
+### ☁️ Instant Development with GitHub Codespaces
+
+Get started in seconds with a fully configured cloud development environment:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cascadiacollections/sk-tic-tac-toe?quickstart=1)
+
+**What you get:**
+- Pre-configured Swift 5.10+ environment
+- GitHub Copilot integration for AI-assisted coding
+- All development tools pre-installed (SwiftLint, swift-format)
+- Git hooks configured automatically
+- No local setup required!
+
+**Getting Started:**
+1. Click the badge above or go to the repository and click "Code" → "Create codespace on main"
+2. Wait for the environment to build (first time takes ~2-3 minutes, subsequent launches are faster)
+3. Start coding immediately with `make dev`
+
 ### 🐳 Development with VS Code and DevContainer
 
 This project includes a complete DevContainer setup for VS Code development:
@@ -63,6 +81,7 @@ This project includes a complete DevContainer setup for VS Code development:
    - SwiftLint and swift-format
    - Git hooks for code quality
    - VS Code extensions for Swift development
+   - GitHub Copilot integration
 
 ### 📦 Swift Package Manager
 
@@ -96,6 +115,21 @@ let result = game.makeMove(row: 0, col: 0)
 - `.devcontainer/`: VS Code DevContainer configuration
 
 ## Development
+
+### 🤖 GitHub Copilot Integration
+
+This project is optimized for GitHub Copilot with comprehensive instructions in `.github/copilot-instructions.md`:
+
+- **Smart Code Suggestions**: Copilot understands the project's Swift style, SpriteKit patterns, and bitboard implementation
+- **Context-Aware**: Knows about cross-platform requirements (iOS/macOS) and testing conventions
+- **Best Practices**: Suggests code following SwiftLint rules and project conventions
+- **Enabled by Default**: Pre-configured in DevContainer and Codespaces
+
+**Tips for using Copilot:**
+- Write descriptive comments before functions to get better suggestions
+- Use descriptive variable/function names for context
+- Copilot works great for tests - describe what you want to test in a comment
+- Ask Copilot Chat for explanations of bitboard operations or SpriteKit APIs
 
 ### 🛠️ Build Tools
 

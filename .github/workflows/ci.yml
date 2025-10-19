@@ -34,9 +34,9 @@ jobs:
       contents: read
     strategy:
       matrix:
-        xcode-version: ['15.4', 'latest-stable']
+        xcode-version: ['16.0', 'latest-stable']
         include:
-          - xcode-version: '15.4'
+          - xcode-version: '16.0'
             ios-version: '17.5'
             macos-version: '14.5'
           - xcode-version: 'latest-stable'

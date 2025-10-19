@@ -13,19 +13,34 @@ This project uses Swift and SpriteKit for iOS and macOS development with modern 
 
 ### Development Environment Setup
 
-#### Option 1: Xcode Development
+#### Option 1: GitHub Codespaces (Recommended for Quick Start)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cascadiacollections/sk-tic-tac-toe?quickstart=1)
+
+1. Click the badge above or navigate to the repository
+2. Click "Code" → "Create codespace on main"
+3. Wait for the environment to build (~2-3 minutes first time)
+4. Start coding with all tools pre-configured!
+
+**Advantages:**
+- No local setup required
+- Consistent environment for all contributors
+- GitHub Copilot enabled by default
+- Pre-installed tools (SwiftLint, swift-format, etc.)
+- Cloud-based development from any machine
+
+#### Option 2: Xcode Development
 1. Clone the repository
 2. Open `tictactoe.xcodeproj` in Xcode
 3. Build and run the project (⌘+R)
 
-#### Option 2: VS Code with DevContainer
+#### Option 3: VS Code with DevContainer
 1. Install VS Code and the DevContainer extension
 2. Install Docker Desktop
 3. Open the repository in VS Code
 4. When prompted, choose "Reopen in Container"
 5. The environment will automatically set up with all required tools
 
-#### Option 3: Manual Setup
+#### Option 4: Manual Setup
 ```bash
 # Install SwiftLint
 brew install swiftlint
@@ -45,6 +60,22 @@ The project includes several tools to maintain code quality:
 - **swift-format**: Automatic code formatting  
 - **Pre-commit hooks**: Automated quality checks
 - **Git hooks**: Prevent commits that don't meet quality standards
+- **GitHub Copilot**: AI-powered code assistance (see `.github/copilot-instructions.md`)
+
+#### Using GitHub Copilot
+
+GitHub Copilot is pre-configured and optimized for this project:
+
+- **Copilot Instructions**: Comprehensive project context in `.github/copilot-instructions.md`
+- **Smart Suggestions**: Understands Swift patterns, SpriteKit APIs, and bitboard operations
+- **Test Generation**: Great for writing test cases - just describe what you want to test
+- **Documentation Help**: Ask Copilot Chat to explain complex code sections
+
+**Best Practices:**
+- Write clear comments to guide Copilot's suggestions
+- Use descriptive variable and function names
+- Review all Copilot suggestions before accepting
+- Copilot is a tool to assist, not replace thoughtful coding
 
 ### 🧪 Testing Strategy
 
