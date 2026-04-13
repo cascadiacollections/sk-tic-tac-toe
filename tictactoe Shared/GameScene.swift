@@ -47,6 +47,7 @@ class GameScene: SKScene {
     // HUD nodes
     private var turnIndicatorLabel: SKLabelNode?
     private var scoreLabel: SKLabelNode?
+    private var menuButtonNode: SKNode?
 
     private static let log = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
@@ -55,7 +56,7 @@ class GameScene: SKScene {
 
     // MARK: - Initialization
 
-    init?(boardSize: Int = 3, size: CGSize) {
+    init?(size: CGSize, boardSize: Int = 3) {
         guard let logic = GameLogic(boardSize: boardSize) else {
             Self.log.error("Failed to init GameLogic for boardSize=\(boardSize)")
             return nil
@@ -63,9 +64,23 @@ class GameScene: SKScene {
         self.boardSize = boardSize
         self.gameLogic = logic
         super.init(size: size)
-        anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        scaleMode = .aspectFill
-        backgroundColor = .clear
+        applySceneDefaults()
+    }
+
+    /// Creates a scene that restores a previously persisted in-progress game,
+    /// including its session scores.
+    init?(size: CGSize, restoring persisted: PersistedGame) {
+        guard let logic = GameLogic(snapshot: persisted.snapshot) else {
+            Self.log.error("Failed to restore GameLogic from snapshot")
+            return nil
+        }
+        self.boardSize = logic.boardSize
+        self.gameLogic = logic
+        super.init(size: size)
+        self.xWins = persisted.xWins
+        self.oWins = persisted.oWins
+        self.draws = persisted.draws
+        applySceneDefaults()
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -76,6 +91,12 @@ class GameScene: SKScene {
         boardSize = logic.boardSize
         gameLogic = logic
         super.init(coder: aDecoder)
+    }
+
+    private func applySceneDefaults() {
+        anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        scaleMode = .aspectFill
+        backgroundColor = .clear
     }
 
     // MARK: - Scene Lifecycle
@@ -96,6 +117,7 @@ class GameScene: SKScene {
         children.forEach { $0.removeFromParent() }
         turnIndicatorLabel = nil
         scoreLabel = nil
+        menuButtonNode = nil
 
         boardNode = SKNode()
         boardNode.alpha = 0
@@ -104,9 +126,22 @@ class GameScene: SKScene {
         calculateBoardLayout()
         cellNodes = Array(repeating: Array(repeating: nil, count: boardSize), count: boardSize)
         drawBoardGrid()
+        renderExistingMoves()
         setupHUD()
 
         boardNode.run(.fadeIn(withDuration: 0.3))
+    }
+
+    /// Renders any pieces already placed in the underlying `gameLogic`.
+    /// Used when the scene is restored from a persisted snapshot.
+    private func renderExistingMoves() {
+        for row in 0..<boardSize {
+            for col in 0..<boardSize {
+                if let player = gameLogic.getPlayerAt(row: row, col: col) {
+                    updateTile(row: row, col: col, player: player, animated: false)
+                }
+            }
+        }
     }
 
     private func calculateBoardLayout() {
@@ -157,7 +192,47 @@ class GameScene: SKScene {
         addChild(score)
         scoreLabel = score
 
+        setupMenuButton(boardDim: boardDim)
+
         updateHUD()
+    }
+
+    private func setupMenuButton(boardDim: CGFloat) {
+        let buttonWidth = cellSize * 1.35
+        let buttonHeight = cellSize * 0.48
+
+        let container = SKNode()
+        container.name = "menuButton"
+        container.zPosition = 6
+        container.position = CGPoint(
+            x: -boardDim / 2 + buttonWidth / 2,
+            y: boardDim / 2 + cellSize * 0.42
+        )
+
+        let bg = SKShapeNode(
+            rect: CGRect(
+                x: -buttonWidth / 2,
+                y: -buttonHeight / 2,
+                width: buttonWidth,
+                height: buttonHeight
+            ),
+            cornerRadius: buttonHeight * 0.3
+        )
+        bg.fillColor = GameColor.systemGray6
+        bg.strokeColor = GameColor.systemGray3
+        bg.lineWidth = 1.5
+        container.addChild(bg)
+
+        let label = SKLabelNode(text: "≡ Menu")
+        label.fontName = "HelveticaNeue-Medium"
+        label.fontSize = buttonHeight * 0.45
+        label.fontColor = GameColor.label
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        container.addChild(label)
+
+        addChild(container)
+        menuButtonNode = container
     }
 
     private func updateHUD() {
@@ -207,6 +282,13 @@ class GameScene: SKScene {
 
     private func handleInteraction(at location: CGPoint) {
         guard !isResetting else { return }
+
+        // Menu button takes precedence over any other interaction.
+        if let menu = menuButtonNode, menu.calculateAccumulatedFrame().contains(location) {
+            returnToMainMenu()
+            return
+        }
+
         if isGameOver { resetGame(); return }
         guard let (row, col) = cellCoordinates(from: location) else { return }
         let mover = gameLogic.currentPlayer
@@ -215,6 +297,7 @@ class GameScene: SKScene {
             Self.log.info("Move \(mover.symbol) at (\(row), \(col))")
             updateTile(row: row, col: col, player: mover)
             checkGameState()
+            persistCurrentState()
         case .failure_positionTaken:
             Self.log.debug("Cell (\(row), \(col)) already taken")
             animateCellShake(row: row, col: col)
@@ -225,9 +308,39 @@ class GameScene: SKScene {
         }
     }
 
+    // MARK: - Persistence
+
+    /// Saves the current logical state when a game is in progress; clears the
+    /// persisted slot once the game has ended so the next launch returns to
+    /// the main menu.
+    private func persistCurrentState() {
+        guard gameLogic.gameState == .ongoing else {
+            GamePersistence.clear()
+            return
+        }
+        let persisted = PersistedGame(
+            snapshot: gameLogic.snapshot(),
+            xWins: xWins,
+            oWins: oWins,
+            draws: draws
+        )
+        GamePersistence.save(persisted)
+    }
+
+    // MARK: - Navigation
+
+    private func returnToMainMenu() {
+        Self.log.info("Returning to main menu")
+        GamePersistence.clear()
+        guard let view else { return }
+        let menu = MainMenuScene(size: view.bounds.size)
+        menu.scaleMode = .aspectFill
+        view.presentScene(menu, transition: .fade(withDuration: 0.25))
+    }
+
     // MARK: - Rendering
 
-    private func updateTile(row: Int, col: Int, player: Player) {
+    private func updateTile(row: Int, col: Int, player: Player, animated: Bool = true) {
         guard let cellOpt = cellNodes[safe: row]?[safe: col],
               let cell = cellOpt else { return }
         let label = SKLabelNode(text: player == .x ? "X" : "O")
@@ -236,12 +349,14 @@ class GameScene: SKScene {
         label.fontName = "HelveticaNeue-Bold"
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .center
-        label.setScale(0)
+        label.setScale(animated ? 0 : 1)
         cell.addChild(label)
-        label.run(.sequence([
-            .scale(to: 1.2, duration: 0.10),
-            .scale(to: 1.0, duration: 0.08)
-        ]))
+        if animated {
+            label.run(.sequence([
+                .scale(to: 1.2, duration: 0.10),
+                .scale(to: 1.0, duration: 0.08)
+            ]))
+        }
     }
 
     private func checkGameState() {
@@ -348,6 +463,8 @@ class GameScene: SKScene {
         isResetting = true
 
         gameLogic.reset()
+        // Starting a fresh round — nothing to restore until the next move.
+        GamePersistence.clear()
 
         childNode(withName: "//gameOverContainer")?.run(.sequence([
             .fadeOut(withDuration: 0.15),

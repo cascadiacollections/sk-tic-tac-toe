@@ -22,7 +22,9 @@ let package = Package(
             path: "tictactoe Shared",
             exclude: [
                 "Assets.xcassets",
-                "GameScene.swift"
+                "GameScene.swift",
+                "MainMenuScene.swift",
+                "GamePersistence.swift"
             ],
             sources: ["GameLogic.swift"]
         ),

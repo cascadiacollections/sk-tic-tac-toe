@@ -3,7 +3,7 @@ import os
 
 // MARK: - Player
 
-public enum Player: Int, CaseIterable, Sendable {
+public enum Player: Int, CaseIterable, Sendable, Codable {
     case x = 1, o
     public var symbol: String { rawValue == 1 ? "❌" : "⭕" }
     public var next: Player { self == .x ? .o : .x }
@@ -11,10 +11,36 @@ public enum Player: Int, CaseIterable, Sendable {
 
 // MARK: - GameState
 
-public enum GameState: Equatable, Sendable {
+public enum GameState: Equatable, Sendable, Codable {
     case ongoing
     case won(Player)
     case draw
+}
+
+// MARK: - GameSnapshot
+
+/// A serializable snapshot of a `GameLogic` instance — sufficient to
+/// reconstruct the full logical state (board, current player, game state).
+public struct GameSnapshot: Codable, Sendable, Equatable {
+    public let boardSize: Int
+    public let xBoard: Int
+    public let oBoard: Int
+    public let currentPlayer: Player
+    public let gameState: GameState
+
+    public init(
+        boardSize: Int,
+        xBoard: Int,
+        oBoard: Int,
+        currentPlayer: Player,
+        gameState: GameState
+    ) {
+        self.boardSize = boardSize
+        self.xBoard = xBoard
+        self.oBoard = oBoard
+        self.currentPlayer = currentPlayer
+        self.gameState = gameState
+    }
 }
 
 // MARK: - MoveOutcome
@@ -151,6 +177,55 @@ public final class GameLogic {
 
     /// Subscript access to `getPlayerAt(row:col:)`.
     public subscript(row: Int, col: Int) -> Player? { getPlayerAt(row: row, col: col) }
+
+    // MARK: - Snapshot / Restore
+
+    /// Captures the current logical state in a serializable snapshot.
+    public func snapshot() -> GameSnapshot {
+        GameSnapshot(
+            boardSize: boardSize,
+            xBoard: xBoard,
+            oBoard: oBoard,
+            currentPlayer: currentPlayer,
+            gameState: gameState
+        )
+    }
+
+    /// Creates a new `GameLogic` restored from a previously captured snapshot.
+    /// - Returns: `nil` if the snapshot's board size is invalid.
+    public convenience init?(snapshot: GameSnapshot) {
+        self.init(boardSize: snapshot.boardSize)
+
+        let validMask = fullBoardMask
+        let xBoard = snapshot.xBoard
+        let oBoard = snapshot.oBoard
+
+        guard xBoard >= 0, oBoard >= 0 else {
+            Self.log.error("Failed to restore snapshot: negative bitboard value")
+            return nil
+        }
+
+        guard (xBoard & oBoard) == 0 else {
+            Self.log.error("Failed to restore snapshot: overlapping bitboards")
+            return nil
+        }
+
+        guard ((xBoard | oBoard) & ~validMask) == 0 else {
+            Self.log.error("Failed to restore snapshot: bitboard contains out-of-range bits")
+            return nil
+        }
+
+        self.xBoard = xBoard
+        self.oBoard = oBoard
+        self.currentPlayer = snapshot.currentPlayer
+        self.gameState = snapshot.gameState
+        // Recompute the winning pattern so `getWinningPatternCoordinates()`
+        // behaves correctly for a restored won state.
+        if case .won(let winner) = snapshot.gameState {
+            _ = checkWin(for: winner == .x ? xBoard : oBoard)
+        }
+        Self.log.info("GameLogic restored from snapshot boardSize=\(self.boardSize)")
+    }
 
     // MARK: - Private Helpers
 
