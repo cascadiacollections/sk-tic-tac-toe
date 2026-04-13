@@ -150,7 +150,8 @@ class GameScene: SKScene {
         switch gameLogic.gameState {
         case .ongoing:
             let p = gameLogic.currentPlayer
-            turnIndicatorLabel?.text = "\(p.symbol)  \(p == .x ? "X" : "O")'s turn"
+            let letter = p == .x ? "X" : "O"
+            turnIndicatorLabel?.text = "\(letter)'s turn"
             turnIndicatorLabel?.fontColor = p == .x ? GameColor.systemRed : GameColor.systemBlue
             turnIndicatorLabel?.isHidden = false
         case .won, .draw:
@@ -214,8 +215,8 @@ class GameScene: SKScene {
     private func updateTile(row: Int, col: Int, player: Player) {
         guard let cellOpt = cellNodes[safe: row]?[safe: col],
               let cell = cellOpt else { return }
-        let label = SKLabelNode(text: player.symbol)
-        label.fontSize = cellSize * 0.6
+        let label = SKLabelNode(text: player == .x ? "X" : "O")
+        label.fontSize = cellSize * 0.55
         label.fontColor = player == .x ? GameColor.systemRed : GameColor.systemBlue
         label.fontName = "HelveticaNeue-Bold"
         label.verticalAlignmentMode = .center
@@ -233,7 +234,7 @@ class GameScene: SKScene {
         case .won(let winner):
             if winner == .x { xWins += 1 } else { oWins += 1 }
             displayWinningLine(for: winner)
-            displayGameOverMessage("\(winner.symbol)  \(winner == .x ? "X" : "O") Wins!")
+            displayGameOverMessage("\(winner == .x ? "X" : "O") Wins! 🎉", winner: winner)
             updateHUD()
         case .draw:
             draws += 1
@@ -283,7 +284,7 @@ class GameScene: SKScene {
         winningLineNode = line
     }
 
-    private func displayGameOverMessage(_ message: String) {
+    private func displayGameOverMessage(_ message: String, winner: Player? = nil) {
         let container = SKNode()
         container.name = "gameOverContainer"
         container.zPosition = 9
@@ -293,7 +294,7 @@ class GameScene: SKScene {
 
         let label = SKLabelNode(text: message)
         label.fontSize = cellSize * 0.42
-        label.fontColor = GameColor.label
+        label.fontColor = winner.map { $0 == .x ? GameColor.systemRed : GameColor.systemBlue } ?? GameColor.label
         label.fontName = "HelveticaNeue-Bold"
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .center
@@ -389,8 +390,9 @@ class GameScene: SKScene {
             rect: CGRect(x: -cellSize / 2, y: -cellSize / 2, width: cellSize, height: cellSize),
             cornerRadius: cellSize * 0.05
         )
-        border.strokeColor = GameColor.separator
-        border.lineWidth = 1.5
+        border.strokeColor = GameColor.systemGray3
+        border.lineWidth = 2.5
+        border.fillColor = GameColor.systemGray6
         return border
     }
 }
