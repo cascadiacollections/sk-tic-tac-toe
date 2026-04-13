@@ -59,7 +59,7 @@ public final class GameLogic {
 
     /// Winning-pattern cache shared across all instances.
     /// Populated once per board size; never mutated after insertion.
-    nonisolated(unsafe) public private(set) static var cachedWinningPatterns: [Int: [Int]] = [:]
+    nonisolated(unsafe) private static var cachedWinningPatterns: [Int: [Int]] = [:]
 
     // MARK: - Init
 
@@ -181,7 +181,7 @@ public final class GameLogic {
 
     private func checkDraw() -> Bool {
         let total = boardSize * boardSize
-        guard total < Int.bitWidth else { return false }
+        guard total <= Int.bitWidth else { return false }
         return (xBoard | oBoard) == (1 << total) - 1
     }
 }

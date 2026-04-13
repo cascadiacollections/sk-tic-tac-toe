@@ -150,7 +150,7 @@ class GameScene: SKScene {
     // MARK: - Rendering
 
     private func updateTile(row: Int, col: Int, player: Player) {
-        guard let cell = cellNodes[safe: row]?[safe: col] ?? nil else { return }
+        guard let cell = cellNodes[safe: row]?[safe: col] else { return }
         let label = SKLabelNode(text: player.symbol)
         label.fontSize = cellSize * 0.6
         label.fontColor = player == .x ? GameColor.systemRed : GameColor.systemBlue
