@@ -1,129 +1,119 @@
 import Foundation
-#if canImport(os)
-import os.log
-#endif
+import os
 
-public enum Player: Int, CaseIterable {
+// MARK: - Player
+
+public enum Player: Int, CaseIterable, Sendable {
     case x = 1, o
-    public var symbol: String { ["❌", "⭕"][rawValue - 1] }
+    public var symbol: String { rawValue == 1 ? "❌" : "⭕" }
     public var next: Player { self == .x ? .o : .x }
 }
 
-public enum GameState: Equatable {
+// MARK: - GameState
+
+public enum GameState: Equatable, Sendable {
     case ongoing
     case won(Player)
     case draw
-
-    public static func == (lhs: GameState, rhs: GameState) -> Bool {
-        switch (lhs, rhs) {
-        case (.ongoing, .ongoing), (.draw, .draw):
-            return true
-        case (.won(let player1), .won(let player2)):
-            return player1 == player2
-        default:
-            return false
-        }
-    }
 }
 
-public enum MoveOutcome: Equatable {
+// MARK: - MoveOutcome
+
+public enum MoveOutcome: Equatable, Sendable {
     case success
     case failure_positionTaken
     case failure_invalidCoordinates
     case failure_gameAlreadyOver
 }
 
+// MARK: - GameLogic
+
 /// Encapsulates the logic for a Tic Tac Toe game on an NxN board.
+///
+/// All methods are main-actor isolated; use from UI code directly
+/// or call from `await MainActor.run { }` in concurrent contexts.
+@MainActor
 public final class GameLogic {
 
-    #if canImport(os)
-    private static let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp.tictactoe", category: "GameLogic")
-    #endif
+    private static let log = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
+        category: "GameLogic"
+    )
+
+    // MARK: - Public State
 
     /// The size of the board (NxN).
     public let boardSize: Int
 
-    /// The player who has the current turn.
+    /// The player whose turn it is.
     public private(set) var currentPlayer: Player = .x
 
     /// The current state of the game.
     public private(set) var gameState: GameState = .ongoing
 
+    // MARK: - Private State
+
     private var xBoard = 0
     private var oBoard = 0
-
-    /// Cached winning patterns for different board sizes.
-    public private(set) static var cachedWinningPatterns: [Int: [Int]] = [:]
-
     private var winningPattern: Int?
 
-    private enum LogLevel: String {
-        case debug = "DEBUG"
-        case info = "INFO"
-        case error = "ERROR"
-    }
+    /// Winning-pattern cache shared across all instances.
+    /// Populated once per board size; never mutated after insertion.
+    nonisolated(unsafe) public private(set) static var cachedWinningPatterns: [Int: [Int]] = [:]
+
+    // MARK: - Init
 
     /// Creates a new game logic instance for a board of the specified size.
     /// - Parameter boardSize: Size of the board (NxN). Must be at least 1.
+    /// - Returns: `nil` if `boardSize` is less than 1.
     public init?(boardSize: Int = 3) {
-        self.boardSize = boardSize
-
         guard boardSize >= 1 else {
-            self.log(.error, "Initialization failed: Board size \(boardSize) must be at least 1.")
+            Self.log.error("Initialization failed: boardSize \(boardSize) must be ≥ 1")
             return nil
         }
-
+        self.boardSize = boardSize
         if GameLogic.cachedWinningPatterns[boardSize] == nil {
-            self.log(.debug, "Generating and caching winning patterns for board size \(boardSize)")
+            Self.log.debug("Generating winning patterns for board size \(boardSize)")
             GameLogic.cachedWinningPatterns[boardSize] = GameLogic.generateWinningPatterns(boardSize: boardSize)
         }
-        self.log(.info, "GameLogic initialized with board size \(boardSize). Current player: \(self.currentPlayer.symbol)")
+        Self.log.info("GameLogic init boardSize=\(boardSize) first=\(Player.x.symbol)")
     }
 
-    /// Attempts to make a move at the specified board coordinates.
-    /// - Parameters:
-    ///   - row: The row index (0-based).
-    ///   - col: The column index (0-based).
-    /// - Returns: `MoveOutcome` indicating success or failure reason.
+    // MARK: - Public API
+
+    /// Attempts to make a move at the specified coordinates.
+    /// - Returns: `MoveOutcome` indicating success or the reason for failure.
     @discardableResult
     public func makeMove(row: Int, col: Int) -> MoveOutcome {
-        self.log(.debug, "Attempting move by \(self.currentPlayer.symbol) at (\(row), \(col))")
+        Self.log.debug("Move attempt by \(self.currentPlayer.symbol) at (\(row), \(col))")
 
         guard row >= 0, row < boardSize, col >= 0, col < boardSize else {
-            self.log(.info, "Move failed: Coordinates (\(row), \(col)) out of bounds [0..<\(self.boardSize)]")
+            Self.log.info("Move failed: (\(row), \(col)) out of bounds")
             return .failure_invalidCoordinates
         }
         guard gameState == .ongoing else {
-            self.log(.info, "Move failed: Game already over (state: \(String(describing: self.gameState)))")
+            Self.log.info("Move failed: game already over (\(String(describing: self.gameState)))")
             return .failure_gameAlreadyOver
         }
 
         let moveBit = positionToBit(row: row, col: col)
-        let occupiedMask = xBoard | oBoard
-
-        if (occupiedMask & moveBit) != 0 {
-            self.log(.info, "Move failed: Position (\(row), \(col)) already taken.")
+        guard (xBoard | oBoard) & moveBit == 0 else {
+            Self.log.info("Move failed: (\(row), \(col)) already taken")
             return .failure_positionTaken
         }
 
-        if currentPlayer == .x {
-            xBoard |= moveBit
-            self.log(.debug, "X placed at (\(row), \(col)). xBoard: \(xBoard)")
-        } else {
-            oBoard |= moveBit
-            self.log(.debug, "O placed at (\(row), \(col)). oBoard: \(oBoard)")
-        }
+        if currentPlayer == .x { xBoard |= moveBit } else { oBoard |= moveBit }
 
-        let currentPlayerBoard = (currentPlayer == .x) ? xBoard : oBoard
-        if checkWin(for: currentPlayerBoard) {
+        let playerBoard = currentPlayer == .x ? xBoard : oBoard
+        if checkWin(for: playerBoard) {
             gameState = .won(currentPlayer)
-            self.log(.info, "Game won by \(self.currentPlayer.symbol)")
+            Self.log.info("Game won by \(self.currentPlayer.symbol)")
         } else if checkDraw() {
             gameState = .draw
-            self.log(.info, "Game ended in a draw.")
+            Self.log.info("Game draw")
         } else {
             currentPlayer = currentPlayer.next
-            self.log(.debug, "Move successful. Next player: \(self.currentPlayer.symbol)")
+            Self.log.debug("Next player: \(self.currentPlayer.symbol)")
         }
         return .success
     }
@@ -135,134 +125,64 @@ public final class GameLogic {
         currentPlayer = .x
         gameState = .ongoing
         winningPattern = nil
-        self.log(.info, "Game reset. Board size \(self.boardSize). Current player: \(self.currentPlayer.symbol)")
+        Self.log.info("Game reset boardSize=\(self.boardSize)")
     }
 
-    /// Returns the coordinates of the winning pattern if the game is won.
-    /// - Returns: Array of `(row, col)` tuples representing the winning line, or `nil` if no winner.
+    /// Returns the winning line coordinates when the game is won.
     public func getWinningPatternCoordinates() -> [(row: Int, col: Int)]? {
-        guard case .won = gameState, let pattern = winningPattern else {
-            return nil
-        }
-
-        let totalSquares = boardSize * boardSize
-        let coordinates = (0..<totalSquares).compactMap { index -> (row: Int, col: Int)? in
-            (pattern & (1 << index)) != 0 ? (index / boardSize, index % boardSize) : nil
-        }
-        return coordinates.sorted { ($0.row * boardSize + $0.col) < ($1.row * boardSize + $1.col) }
+        guard case .won = gameState, let pattern = winningPattern else { return nil }
+        return (0..<boardSize * boardSize)
+            .filter { (pattern & (1 << $0)) != 0 }
+            .map { ($0 / boardSize, $0 % boardSize) }
+            .sorted { $0.0 * boardSize + $0.1 < $1.0 * boardSize + $1.1 }
     }
 
-    /// Returns the player at the specified board position.
-    /// - Parameters:
-    ///   - row: The row index (0-based).
-    ///   - col: The column index (0-based).
-    /// - Returns: The `Player` at the position, or `nil` if empty or out of bounds.
+    /// Returns the player at the given board position, or `nil` if empty / out of bounds.
     public func getPlayerAt(row: Int, col: Int) -> Player? {
-        guard row >= 0, row < boardSize, col >= 0, col < boardSize else {
-            return nil
-        }
+        guard row >= 0, row < boardSize, col >= 0, col < boardSize else { return nil }
         let bit = positionToBit(row: row, col: col)
-        if (xBoard & bit) != 0 {
-            return .x
-        } else if (oBoard & bit) != 0 {
-            return .o
-        } else {
-            return nil
-        }
+        if xBoard & bit != 0 { return .x }
+        if oBoard & bit != 0 { return .o }
+        return nil
     }
 
-    /// Access the player at the specified position via subscript syntax.
-    /// - Parameters:
-    ///   - row: The row index (0-based).
-    ///   - col: The column index (0-based).
-    public subscript(row: Int, col: Int) -> Player? {
-        return getPlayerAt(row: row, col: col)
-    }
+    /// Subscript access to `getPlayerAt(row:col:)`.
+    public subscript(row: Int, col: Int) -> Player? { getPlayerAt(row: row, col: col) }
 
-    private func positionToBit(row: Int, col: Int) -> Int {
-        1 << (row * boardSize + col)
-    }
+    // MARK: - Private Helpers
+
+    private func positionToBit(row: Int, col: Int) -> Int { 1 << (row * boardSize + col) }
 
     private static func generateWinningPatterns(boardSize: Int) -> [Int] {
-        let dimensionRange = 0..<boardSize
-        let totalSquares = boardSize * boardSize
-
-        guard totalSquares <= Int.bitWidth else {
-            logStatic(.error, "Board size \(boardSize) too large, exceeds Int bit width (\(Int.bitWidth))")
+        let n = boardSize
+        let total = n * n
+        guard total <= Int.bitWidth else {
+            log.error("Board size \(n) exceeds Int bit width")
             return []
         }
-
-        let rowPatterns = dimensionRange.map { row in
-            dimensionRange.reduce(0) { $0 | (1 << (row * boardSize + $1)) }
-        }
-        let colPatterns = dimensionRange.map { col in
-            dimensionRange.reduce(0) { $0 | (1 << ($1 * boardSize + col)) }
-        }
-        let diagonal = dimensionRange.reduce(0) { $0 | (1 << ($1 * boardSize + $1)) }
-        let antiDiagonal = dimensionRange.reduce(0) { $0 | (1 << ($1 * boardSize + (boardSize - 1 - $1))) }
-
-        return rowPatterns + colPatterns + [diagonal, antiDiagonal]
+        let rows      = (0..<n).map { r in (0..<n).reduce(0) { $0 | (1 << (r * n + $1)) } }
+        let cols      = (0..<n).map { c in (0..<n).reduce(0) { $0 | (1 << ($1 * n + c)) } }
+        let diag      = (0..<n).reduce(0) { $0 | (1 << ($1 * n + $1)) }
+        let antiDiag  = (0..<n).reduce(0) { $0 | (1 << ($1 * n + (n - 1 - $1))) }
+        return rows + cols + [diag, antiDiag]
     }
 
     private func checkWin(for playerBoard: Int) -> Bool {
-        guard let patterns = GameLogic.cachedWinningPatterns[self.boardSize] else {
-            self.log(.error, "Consistency error: Winning patterns not found for board size \(self.boardSize)")
-            assertionFailure("Winning patterns not found for board size \(self.boardSize)")
+        guard let patterns = GameLogic.cachedWinningPatterns[boardSize] else {
+            assertionFailure("Winning patterns missing for boardSize \(boardSize)")
             return false
         }
-
-        for pattern in patterns {
-            if (playerBoard & pattern) == pattern {
-                winningPattern = pattern
-                return true
-            }
+        for pattern in patterns where (playerBoard & pattern) == pattern {
+            winningPattern = pattern
+            return true
         }
         return false
     }
 
     private func checkDraw() -> Bool {
-        let totalSquares = boardSize * boardSize
-        guard totalSquares < Int.bitWidth else { return false }
-
-        let fullBoard = (1 << totalSquares) - 1
-        return (xBoard | oBoard) == fullBoard
-    }
-
-    // MARK: - Logging
-
-    private func log(_ level: LogLevel, _ message: String) {
-        #if canImport(os)
-        os_log("%{public}@ - %{public}@", log: Self.log, type: osLogType(for: level), level.rawValue, message)
-        #else
-        print("[\(level.rawValue)] \(message)")
-        #endif
-    }
-
-    private static func logStatic(_ level: LogLevel, _ message: String) {
-        #if canImport(os)
-        os_log("%{public}@ - %{public}@", log: log, type: osLogType(for: level), level.rawValue, message)
-        #else
-        print("[\(level.rawValue)] \(message)")
-        #endif
-    }
-
-    private static func osLogType(for level: LogLevel) -> OSLogType {
-        #if canImport(os)
-        switch level {
-        case .debug:
-            return .debug
-        case .info:
-            return .info
-        case .error:
-            return .error
-        }
-        #else
-        // Dummy fallback, won't be used without os imported
-        fatalError("osLogType called without os module")
-        #endif
-    }
-
-    private func osLogType(for level: LogLevel) -> OSLogType {
-        return Self.osLogType(for: level)
+        let total = boardSize * boardSize
+        guard total < Int.bitWidth else { return false }
+        return (xBoard | oBoard) == (1 << total) - 1
     }
 }
+

@@ -9,6 +9,7 @@ import Testing
 @testable import TicTacToeCore // Import the SPM module
 
 @Suite
+@MainActor
 final class GameLogicTests {
 
     // Helper to make a sequence of moves without checking individual outcomes (for setting up state)
@@ -23,7 +24,7 @@ final class GameLogicTests {
     }
 
     // Helper to check win (Optional, could just use #expect directly)
-    private func expectWin(for player: GameLogic.Player, logic: GameLogic, message: Comment) {
+    private func expectWin(for player: Player, logic: GameLogic, message: Comment) {
         #expect(logic.gameState == .won(player), message)
     }
 
@@ -106,7 +107,7 @@ final class GameLogicTests {
 
         // Attempt the same move again
         let invalidMoveOutcome = logic.makeMove(row: 0, col: 0)
-        // Use the specific failure enum case from GameLogic.MoveOutcome
+        // Use the specific failure enum case from MoveOutcome
         #expect(invalidMoveOutcome == .failure_positionTaken, "Expected move on taken position to return .failure_positionTaken")
         #expect(logic.getPlayerAt(row: 0, col: 0) == .x, "The player at (0,0) should still be X") // Verify state didn't change
     }
@@ -152,7 +153,7 @@ final class GameLogicTests {
     // MARK: - Win Condition Test Arguments (Moved outside @Test and made static)
 
     // Make these static properties so they can be referenced by @Test
-    private static let xWinArguments: [(moves: [(Int, Int)], expectedState: GameLogic.GameState, message: Comment)] = [
+    nonisolated(unsafe) private static let xWinArguments: [(moves: [(Int, Int)], expectedState: GameState, message: Comment)] = [
         // Row Wins
         (moves: [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2)], expectedState: .won(.x), message: "X wins Row 0"),
         (moves: [(1, 0), (0, 0), (1, 1), (0, 1), (1, 2)], expectedState: .won(.x), message: "X wins Row 1"),
@@ -169,7 +170,7 @@ final class GameLogicTests {
     ]
 
     // Make this a static property so it can be referenced by @Test
-    private static let oWinArguments: [(moves: [(Int, Int)], expectedState: GameLogic.GameState, message: Comment)] = [
+    nonisolated(unsafe) private static let oWinArguments: [(moves: [(Int, Int)], expectedState: GameState, message: Comment)] = [
         // Row Wins (Need dummy X moves to make it O's turn for the winning move)
         (moves: [(1, 0), (0, 0), (1, 1), (0, 1), (2, 2), (0, 2)], expectedState: .won(.o), message: "O wins Row 0"), // Added a dummy X move (2,2)
         (moves: [(0, 0), (1, 0), (0, 1), (1, 1), (2, 2), (1, 2)], expectedState: .won(.o), message: "O wins Row 1"),
@@ -189,7 +190,7 @@ final class GameLogicTests {
     // MARK: - Win Condition Tests
 
     @Test("Win Condition Test for Player X (Rows, Cols, Diags)", arguments: xWinArguments) // Reference the static variable
-    func testWinConditionX(moves: [(Int, Int)], expectedState: GameLogic.GameState, message: Comment) {
+    func testWinConditionX(moves: [(Int, Int)], expectedState: GameState, message: Comment) {
         guard let logic = GameLogic(boardSize: 3) else {
              #expect(Bool(false), "GameLogic should initialize successfully")
             return
@@ -199,8 +200,8 @@ final class GameLogicTests {
     }
 
     @Test("Win Condition Test for Player O (Rows, Cols, Diags)", arguments: oWinArguments) // Reference the static variable
-    func testWinConditionO(moves: [(Int, Int)], expectedState: GameLogic.GameState, message: Comment) {
-        // Use the fully qualified type name GameLogic.GameState (already done in previous fix)
+    func testWinConditionO(moves: [(Int, Int)], expectedState: GameState, message: Comment) {
+        // Use the fully qualified type name GameState (already done in previous fix)
         guard let logic = GameLogic(boardSize: 3) else {
              #expect(Bool(false), "GameLogic should initialize successfully")
             return
@@ -248,7 +249,7 @@ final class GameLogicTests {
 
     // Argument for 4x4 draw test (moved outside @Test and made static)
      // Make this a static property
-    private static let fourByFourDrawArgument: (moves: [(Int, Int)], expectedState: GameLogic.GameState) = (
+    private static let fourByFourDrawArgument: (moves: [(Int, Int)], expectedState: GameState) = (
         moves: [
              (0,0), (0,1), (0,2), (0,3),
              (1,1), (1,0), (1,3), (1,2),

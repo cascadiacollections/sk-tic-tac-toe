@@ -1,24 +1,26 @@
-//
-//  GameScene.swift
-//  TicTacToe
-//
-//  Created by YourName on Date.
-//
-//  This scene manages the Tic Tac Toe game board rendering, user interaction, and game state updates.
-//  It handles drawing the board grid, processing player moves, displaying game results, and resetting the game.
-//
-
 import SpriteKit
-import os.log
+import os
+
+// MARK: - Platform Abstractions
+
+#if os(iOS)
+import UIKit
+typealias GameColor = UIColor
+#elseif os(macOS)
+import AppKit
+typealias GameColor = NSColor
+#endif
+
+// MARK: - GameScene
 
 @MainActor
 class GameScene: SKScene {
 
     // MARK: - Properties
 
-    private(set) var boardNode: SKNode! // Node to hold all board elements for easy clearing/scaling
-    private(set) var cellNodes: [[SKSpriteNode?]] = [] // Store references to cell nodes if needed later
-    private(set) var winningLineNode: SKShapeNode? // Reference to the winning line to remove on reset
+    private(set) var boardNode: SKNode!
+    private(set) var cellNodes: [[SKSpriteNode?]] = []
+    private(set) var winningLineNode: SKShapeNode?
 
     private let boardSize: Int
     private(set) var gameLogic: GameLogic
@@ -26,41 +28,42 @@ class GameScene: SKScene {
     private(set) var cellSize: CGFloat = 0
     private(set) var boardOriginOffset: CGPoint = .zero
 
-    private var isGameOver: Bool {
-        gameLogic.gameState != .ongoing
-    }
+    private var isGameOver: Bool { gameLogic.gameState != .ongoing }
 
-    private static let sceneLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp.tictactoe", category: "GameScene")
+    private static let log = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
+        category: "GameScene"
+    )
 
     // MARK: - Initialization
 
     init?(boardSize: Int = 3, size: CGSize) {
         guard let logic = GameLogic(boardSize: boardSize) else {
-            os_log(.error, log: GameScene.sceneLog, "Failed to initialize GameLogic for board size %d", boardSize)
+            Self.log.error("Failed to init GameLogic for boardSize=\(boardSize)")
             return nil
         }
         self.boardSize = boardSize
         self.gameLogic = logic
         super.init(size: size)
-        self.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        self.scaleMode = .aspectFill
-        self.backgroundColor = .clear
+        anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        scaleMode = .aspectFill
+        backgroundColor = .clear
     }
 
     required init?(coder aDecoder: NSCoder) {
-        let decodedBoardSize = aDecoder.decodeInteger(forKey: "boardSize")
-        guard let logic = GameLogic(boardSize: decodedBoardSize > 0 ? decodedBoardSize : 3) else {
-            fatalError("init(coder:) failed to initialize GameLogic")
+        let decoded = aDecoder.decodeInteger(forKey: "boardSize")
+        guard let logic = GameLogic(boardSize: decoded > 0 ? decoded : 3) else {
+            fatalError("init(coder:) failed to create GameLogic")
         }
-        self.boardSize = logic.boardSize
-        self.gameLogic = logic
+        boardSize = logic.boardSize
+        gameLogic = logic
         super.init(coder: aDecoder)
     }
 
     // MARK: - Scene Lifecycle
 
     override func didMove(to view: SKView) {
-        os_log(.debug, log: GameScene.sceneLog, "GameScene didMove to view. Size: %@", NSCoder.string(for: size))
+        Self.log.debug("didMove size=\(self.size.width)x\(self.size.height)")
         setupBoard()
     }
 
@@ -70,150 +73,101 @@ class GameScene: SKScene {
         children.forEach { $0.removeFromParent() }
         boardNode = SKNode()
         addChild(boardNode)
-
         calculateBoardLayout()
-
         cellNodes = Array(repeating: Array(repeating: nil, count: boardSize), count: boardSize)
-
         drawBoardGrid()
     }
 
     private func calculateBoardLayout() {
         cellSize = min(size.width, size.height) * 0.9 / CGFloat(boardSize)
-        os_log(.debug, log: GameScene.sceneLog, "Calculated cell size: %.2f", cellSize)
-
-        let boardWidth = cellSize * CGFloat(boardSize)
-        let boardHeight = cellSize * CGFloat(boardSize)
-
-        let xOffset = -boardWidth / 2
-        let yOffset = -boardHeight / 2
-        boardOriginOffset = CGPoint(x: xOffset, y: yOffset)
-
-        os_log(.debug, log: GameScene.sceneLog, "Board origin offset: %@", NSCoder.string(for: boardOriginOffset))
+        let boardDim = cellSize * CGFloat(boardSize)
+        boardOriginOffset = CGPoint(x: -boardDim / 2, y: -boardDim / 2)
+        Self.log.debug("cellSize=\(self.cellSize) origin=(\(self.boardOriginOffset.x), \(self.boardOriginOffset.y))")
     }
 
     private func drawBoardGrid() {
         for row in 0..<boardSize {
             for col in 0..<boardSize {
-                let cellPosition = position(forRow: row, col: col)
-
-                let cellNode = SKSpriteNode(color: .clear, size: CGSize(width: cellSize, height: cellSize))
-                cellNode.position = cellPosition
-                cellNode.name = "cell_\(row)_\(col)"
-                boardNode.addChild(cellNode)
-                cellNodes[row][col] = cellNode
-
-                let border = makeCellBorderNode()
-                cellNode.addChild(border)
+                let cell = SKSpriteNode(color: .clear, size: CGSize(width: cellSize, height: cellSize))
+                cell.position = position(forRow: row, col: col)
+                cell.name = "cell_\(row)_\(col)"
+                cell.addChild(makeCellBorderNode())
+                boardNode.addChild(cell)
+                cellNodes[row][col] = cell
             }
         }
-        os_log(.debug, log: GameScene.sceneLog, "Board grid drawn.")
     }
 
-    // MARK: - Coordinate Calculation Helpers
+    // MARK: - Coordinate Helpers
 
     private func position(forRow row: Int, col: Int) -> CGPoint {
-        let x = boardOriginOffset.x + CGFloat(col) * cellSize + cellSize / 2
-        let y = boardOriginOffset.y + CGFloat(row) * cellSize + cellSize / 2
-        return CGPoint(x: x, y: y)
+        CGPoint(
+            x: boardOriginOffset.x + CGFloat(col) * cellSize + cellSize / 2,
+            y: boardOriginOffset.y + CGFloat(row) * cellSize + cellSize / 2
+        )
     }
 
     private func cellCoordinates(from location: CGPoint) -> (row: Int, col: Int)? {
-        let boardWidth = cellSize * CGFloat(boardSize)
-        let boardHeight = cellSize * CGFloat(boardSize)
-        let boardRect = CGRect(origin: boardOriginOffset, size: CGSize(width: boardWidth, height: boardHeight))
-
-        guard boardRect.contains(location) else {
-            os_log(.debug, log: GameScene.sceneLog, "Touch location %@ outside board rect %@", NSCoder.string(for: location), NSCoder.string(for: boardRect))
-            return nil
-        }
-
-        let col = Int((location.x - boardOriginOffset.x) / cellSize)
-        let row = Int((location.y - boardOriginOffset.y) / cellSize)
-
-        let clampedRow = max(0, min(row, boardSize - 1))
-        let clampedCol = max(0, min(col, boardSize - 1))
-
-        return (row: clampedRow, col: clampedCol)
+        let boardDim = cellSize * CGFloat(boardSize)
+        let boardRect = CGRect(origin: boardOriginOffset, size: CGSize(width: boardDim, height: boardDim))
+        guard boardRect.contains(location) else { return nil }
+        let col = max(0, min(Int((location.x - boardOriginOffset.x) / cellSize), boardSize - 1))
+        let row = max(0, min(Int((location.y - boardOriginOffset.y) / cellSize), boardSize - 1))
+        return (row, col)
     }
 
-    // MARK: - Touch/Mouse Handling
+    // MARK: - Input Handling
 
-    #if os(iOS)
-    override func touchesBegan(_ touches: Set<GameTouchEvent>, with event: GameEvent?) {
+#if os(iOS)
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         handleInteraction(at: touch.location(in: self))
     }
-    #elseif os(macOS)
-    override func mouseDown(with event: GameEvent) {
+#elseif os(macOS)
+    override func mouseDown(with event: NSEvent) {
         handleInteraction(at: event.location(in: self))
     }
-    #endif
+#endif
 
     private func handleInteraction(at location: CGPoint) {
-        os_log(.debug, log: GameScene.sceneLog, "Interaction at: %@", NSCoder.string(for: location))
-
-        if isGameOver {
-            os_log(.debug, log: GameScene.sceneLog, "Game is over. Handling game over tap.")
-            handleGameOverTap()
-            return
-        }
-
-        guard let (row, col) = cellCoordinates(from: location) else {
-            os_log(.debug, log: GameScene.sceneLog, "Interaction location does not map to a cell.")
-            return
-        }
-        os_log(.debug, log: GameScene.sceneLog, "Mapped interaction to cell: (%d, %d)", row, col)
-
-        let playerMakingMove = gameLogic.currentPlayer
-
-        let moveOutcome = gameLogic.makeMove(row: row, col: col)
-
-        switch moveOutcome {
+        if isGameOver { resetGame(); return }
+        guard let (row, col) = cellCoordinates(from: location) else { return }
+        let mover = gameLogic.currentPlayer
+        switch gameLogic.makeMove(row: row, col: col) {
         case .success:
-            os_log(.info, log: GameScene.sceneLog, "Move successful for %{public}@ at (%d, %d)", playerMakingMove.symbol, row, col)
-            updateTile(row: row, col: col, player: playerMakingMove)
+            Self.log.info("Move \(mover.symbol) at (\(row), \(col))")
+            updateTile(row: row, col: col, player: mover)
             checkGameState()
         case .failure_positionTaken:
-            os_log(.debug, log: GameScene.sceneLog, "Move failed: Position (%d, %d) taken.", row, col)
+            Self.log.debug("Cell (\(row), \(col)) already taken")
         case .failure_invalidCoordinates:
-            os_log(.error, log: GameScene.sceneLog, "Move failed: Invalid coordinates (%d, %d) reported by logic, but interaction was mapped.", row, col)
+            Self.log.error("Invalid coords (\(row), \(col)) reached handleInteraction")
         case .failure_gameAlreadyOver:
-            os_log(.debug, log: GameScene.sceneLog, "Move failed: Game already over, but check was bypassed?")
+            Self.log.debug("Move attempted after game ended")
         }
     }
 
-    // MARK: - Game State Updates
+    // MARK: - Rendering
 
     private func updateTile(row: Int, col: Int, player: Player) {
-        guard row >= 0, row < boardSize, col >= 0, col < boardSize,
-              let cellNode = cellNodes[row][col] else {
-            os_log(.error, log: GameScene.sceneLog, "Attempted to update tile at invalid index (%d, %d)", row, col)
-            return
-        }
-
-        let symbolLabel = SKLabelNode(text: player.symbol)
-        symbolLabel.fontSize = cellSize * 0.6
-        symbolLabel.fontColor = player == .x ? GameColor.red : GameColor.blue
-        symbolLabel.fontName = "HelveticaNeue-Bold"
-        symbolLabel.verticalAlignmentMode = SKLabelVerticalAlignmentMode.center
-        symbolLabel.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.center
-        symbolLabel.position = CGPoint(x: 0, y: 0)
-        cellNode.addChild(symbolLabel)
-        os_log(.debug, log: GameScene.sceneLog, "Updated tile (%d, %d) with symbol %{public}@", row, col, player.symbol)
+        guard let cell = cellNodes[safe: row]?[safe: col] ?? nil else { return }
+        let label = SKLabelNode(text: player.symbol)
+        label.fontSize = cellSize * 0.6
+        label.fontColor = player == .x ? GameColor.systemRed : GameColor.systemBlue
+        label.fontName = "HelveticaNeue-Bold"
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        cell.addChild(label)
     }
 
     private func checkGameState() {
         switch gameLogic.gameState {
         case .won(let winner):
-            os_log(.info, log: GameScene.sceneLog, "Game won by %{public}@", winner.symbol)
             displayWinningLine(for: winner)
             displayGameOverMessage("Player \(winner.symbol) Wins!")
         case .draw:
-            os_log(.info, log: GameScene.sceneLog, "Game ended in a draw.")
             displayGameOverMessage("It's a Draw!")
         case .ongoing:
-            os_log(.debug, log: GameScene.sceneLog, "Game ongoing. Next player: %{public}@", gameLogic.currentPlayer.symbol)
             break
         }
     }
@@ -222,143 +176,108 @@ class GameScene: SKScene {
         winningLineNode?.removeFromParent()
         winningLineNode = nil
 
-        guard let winningCoordinates = gameLogic.getWinningPatternCoordinates(),
-              winningCoordinates.count == boardSize,
-              let startCoord = winningCoordinates.first,
-              let endCoord = winningCoordinates.last else {
-            os_log(.error, log: GameScene.sceneLog, "Could not get valid winning pattern coordinates for winner %{public}@", player.symbol)
-            return
-        }
+        guard let coords = gameLogic.getWinningPatternCoordinates(),
+              coords.count == boardSize,
+              let first = coords.first, let last = coords.last else { return }
 
-        let startPosition = position(forRow: startCoord.row, col: startCoord.col)
-        let endPosition = position(forRow: endCoord.row, col: endCoord.col)
+        var start = position(forRow: first.row, col: first.col)
+        var end   = position(forRow: last.row,  col: last.col)
+        let half  = cellSize / 2
 
-        var adjustedStart = startPosition
-        var adjustedEnd = endPosition
-        let halfCell = cellSize / 2
-
-        if startCoord.row == endCoord.row {
-            adjustedStart.x -= halfCell
-            adjustedEnd.x += halfCell
-        } else if startCoord.col == endCoord.col {
-            adjustedStart.y -= halfCell
-            adjustedEnd.y += halfCell
-        } else if (startCoord.row < endCoord.row && startCoord.col < endCoord.col) || (startCoord.row > endCoord.row && startCoord.col > endCoord.col) {
-            if startCoord.row < endCoord.row {
-                adjustedStart.x -= halfCell; adjustedStart.y -= halfCell
-                adjustedEnd.x += halfCell; adjustedEnd.y += halfCell
-            } else {
-                adjustedStart.x += halfCell; adjustedStart.y += halfCell
-                adjustedEnd.x -= halfCell; adjustedEnd.y -= halfCell
-            }
+        if first.row == last.row {
+            start.x -= half; end.x += half
+        } else if first.col == last.col {
+            start.y -= half; end.y += half
+        } else if (last.row - first.row) * (last.col - first.col) > 0 {
+            start.x -= half; start.y -= half
+            end.x   += half; end.y   += half
         } else {
-            if startCoord.row < endCoord.row {
-                adjustedStart.x += halfCell; adjustedStart.y -= halfCell
-                adjustedEnd.x -= halfCell; adjustedEnd.y += halfCell
-            } else {
-                adjustedStart.x -= halfCell; adjustedStart.y += halfCell
-                adjustedEnd.x += halfCell; adjustedEnd.y -= halfCell
-            }
+            start.x += half; start.y -= half
+            end.x   -= half; end.y   += half
         }
 
-        let linePath = CGMutablePath()
-        linePath.move(to: adjustedStart)
-        linePath.addLine(to: adjustedEnd)
+        let path = CGMutablePath()
+        path.move(to: start)
+        path.addLine(to: end)
 
-        let lineNode = SKShapeNode(path: linePath)
-        lineNode.strokeColor = player == .x ? GameColor.red.withAlphaComponent(0.8) : GameColor.blue.withAlphaComponent(0.8)
-        lineNode.lineWidth = cellSize * 0.15
-        lineNode.lineCap = .round
-        lineNode.zPosition = 1
-        boardNode.addChild(lineNode)
-
-        winningLineNode = lineNode
-        os_log(.debug, log: GameScene.sceneLog, "Displayed winning line from %@ to %@", NSCoder.string(for: adjustedStart), NSCoder.string(for: adjustedEnd))
+        let line = SKShapeNode(path: path)
+        line.strokeColor = (player == .x ? GameColor.systemRed : GameColor.systemBlue).withAlphaComponent(0.8)
+        line.lineWidth = cellSize * 0.15
+        line.lineCap = .round
+        line.zPosition = 1
+        boardNode.addChild(line)
+        winningLineNode = line
     }
 
     private func displayGameOverMessage(_ message: String) {
-        let messageLabel = SKLabelNode(text: message)
-        messageLabel.fontSize = size.height * 0.08
-        messageLabel.fontColor = GameColor.black
-        messageLabel.fontName = "HelveticaNeue-Bold"
-        messageLabel.position = CGPoint(x: 0, y: size.height * 0.3)
-        messageLabel.zPosition = 10
-        messageLabel.name = "gameOverLabel"
+        let label = SKLabelNode(text: message)
+        label.fontSize = size.height * 0.08
+        label.fontColor = GameColor.label
+        label.fontName = "HelveticaNeue-Bold"
+        label.position = CGPoint(x: 0, y: size.height * 0.3)
+        label.zPosition = 10
+        label.name = "gameOverLabel"
 
-        let background = SKShapeNode(rect: messageLabel.frame.insetBy(dx: -20, dy: -10), cornerRadius: 10)
-        background.fillColor = GameColor.white.withAlphaComponent(0.7)
-        background.strokeColor = .clear
-        background.zPosition = 9
-        background.name = "gameOverBackground"
-        addChild(background)
+        let bg = SKShapeNode(rect: label.frame.insetBy(dx: -20, dy: -10), cornerRadius: 10)
+        bg.fillColor = GameColor.systemBackground.withAlphaComponent(0.85)
+        bg.strokeColor = .clear
+        bg.zPosition = 9
+        bg.name = "gameOverBackground"
+        addChild(bg)
+        addChild(label)
 
-        addChild(messageLabel)
-        os_log(.info, log: GameScene.sceneLog, "Displayed game over message: '%{public}@'", message)
+        let sub = SKLabelNode(text: "Tap to play again")
+        sub.fontSize = size.height * 0.04
+        sub.fontColor = GameColor.secondaryLabel
+        sub.fontName = "HelveticaNeue"
+        sub.position = CGPoint(x: 0, y: label.position.y - label.frame.height - 10)
+        sub.zPosition = 10
+        sub.name = "resetLabel"
+        addChild(sub)
 
-        let resetLabel = SKLabelNode(text: "Tap to play again")
-        resetLabel.fontSize = size.height * 0.04
-        resetLabel.fontColor = GameColor.darkGray
-        resetLabel.fontName = "HelveticaNeue"
-        resetLabel.position = CGPoint(x: 0, y: messageLabel.position.y - messageLabel.frame.height - 10)
-        resetLabel.zPosition = 10
-        resetLabel.name = "resetLabel"
-        addChild(resetLabel)
+        Self.log.info("Game over: \(message)")
     }
 
-    // MARK: - Game Reset
-
-    private func handleGameOverTap() {
-        os_log(.info, log: GameScene.sceneLog, "Game over tap detected. Resetting game.")
-        self.resetGame()
-    }
-
-    // MARK: - Public API
+    // MARK: - Reset
 
     func resetGame() {
         gameLogic.reset()
-
-        removeNode(withName: "gameOverLabel")
-        removeNode(withName: "gameOverBackground")
-        removeNode(withName: "resetLabel")
+        ["gameOverLabel", "gameOverBackground", "resetLabel"].forEach {
+            childNode(withName: "//\($0)")?.removeFromParent()
+        }
         winningLineNode?.removeFromParent()
         winningLineNode = nil
 
         for row in 0..<boardSize {
             for col in 0..<boardSize {
                 cellNodes[row][col]?.removeAllChildren()
-                let border = makeCellBorderNode()
-                cellNodes[row][col]?.addChild(border)
+                if let cell = cellNodes[row][col] {
+                    cell.addChild(makeCellBorderNode())
+                }
             }
         }
-
-        os_log(.info, log: GameScene.sceneLog, "Game has been reset.")
+        Self.log.info("Game reset")
     }
 
+    // MARK: - Helpers
+
     private func makeCellBorderNode() -> SKShapeNode {
-        let border = SKShapeNode(rect: CGRect(x: -cellSize / 2, y: -cellSize / 2, width: cellSize, height: cellSize), cornerRadius: cellSize * 0.05)
-        border.strokeColor = GameColor.lightGray
+        let border = SKShapeNode(
+            rect: CGRect(x: -cellSize / 2, y: -cellSize / 2, width: cellSize, height: cellSize),
+            cornerRadius: cellSize * 0.05
+        )
+        border.strokeColor = GameColor.separator
         border.lineWidth = 1.5
         return border
     }
+}
 
-    private func removeNode(withName name: String) {
-        if let node = childNode(withName: "//\(name)") {
-            node.removeFromParent()
-        }
+// MARK: - Collection safe subscript
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
 
-// MARK: - Platform Abstractions
-
-#if os(iOS)
-import UIKit
-typealias GameColor = UIColor
-typealias GameEvent = UIEvent // For touch/mouse event parameter consistency
-typealias GameTouchEvent = UITouch
-#elseif os(macOS)
-import AppKit
-typealias GameColor = NSColor
-typealias GameEvent = NSEvent
-typealias GameTouchEvent = NSEvent // macOS uses NSEvent directly for mouse down
-#endif
 
