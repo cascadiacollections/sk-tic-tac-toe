@@ -1,5 +1,4 @@
-// swift-tools-version: 5.9
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version: 6.0
 
 import PackageDescription
 
@@ -15,19 +14,15 @@ let package = Package(
             targets: ["TicTacToeCore"]
         ),
     ],
-    dependencies: [
-        // Add any external dependencies here
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "TicTacToeCore",
             dependencies: [],
             path: "tictactoe Shared",
             exclude: [
-                "Actions.sks",
-                "Assets.xcassets", 
-                "GameScene.sks",
-                "GameScene.swift"  // Exclude SpriteKit-dependent files for SPM
+                "Assets.xcassets",
+                "GameScene.swift"
             ],
             sources: ["GameLogic.swift"]
         ),

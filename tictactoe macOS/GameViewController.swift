@@ -1,35 +1,38 @@
-import UIKit
+import Cocoa
 import SpriteKit
+import os
 
 @MainActor
-class GameViewController: UIViewController {
+class GameViewController: NSViewController {
+
+    private static let log = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
+        category: "GameViewController"
+    )
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        if let skView = view as? SKView {
-            let viewSize = skView.bounds.size
-            print("SKView bounds size: \(viewSize)")
-
-            let scene = GameScene(size: viewSize)
-            scene.scaleMode = SKSceneScaleMode.aspectFill
-            skView.presentScene(scene)
-            skView.ignoresSiblingOrder = true
-
-            #if DEBUG
-            skView.showsFPS = true
-            skView.showsNodeCount = true
-            #endif
-
-        } else {
-            print("ERROR: self.view is not an SKView. Check Storyboard or view setup.")
+        guard let skView = view as? SKView else {
+            Self.log.error("self.view is not an SKView — check storyboard")
+            return
         }
-    }
 
-    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        UIDevice.current.userInterfaceIdiom == .phone ? .allButUpsideDown : .all
-    }
+        let viewSize = skView.bounds.size
+        Self.log.debug("SKView bounds size: \(viewSize.width)x\(viewSize.height)")
 
-    override var prefersStatusBarHidden: Bool { true }
+        guard let scene = GameScene(size: viewSize) else {
+            Self.log.error("Could not initialize GameScene")
+            return
+        }
+        scene.scaleMode = .aspectFill
+        skView.presentScene(scene)
+        skView.ignoresSiblingOrder = true
+
+        #if DEBUG
+        skView.showsFPS = true
+        skView.showsNodeCount = true
+        #endif
+    }
 }
 

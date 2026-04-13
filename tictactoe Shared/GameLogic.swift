@@ -56,6 +56,7 @@ public final class GameLogic {
     private var xBoard = 0
     private var oBoard = 0
     private var winningPattern: Int?
+    private let fullBoardMask: Int
 
     /// Winning-pattern cache shared across all instances.
     /// Populated once per board size; never mutated after insertion.
@@ -64,14 +65,16 @@ public final class GameLogic {
     // MARK: - Init
 
     /// Creates a new game logic instance for a board of the specified size.
-    /// - Parameter boardSize: Size of the board (NxN). Must be at least 1.
-    /// - Returns: `nil` if `boardSize` is less than 1.
+    /// - Parameter boardSize: Size of the board (NxN). Must be at least 1 and at most 7
+    ///   (boards larger than 7×7 exceed the 64-bit integer used for bitboard storage).
+    /// - Returns: `nil` if `boardSize` is out of range.
     public init?(boardSize: Int = 3) {
-        guard boardSize >= 1 else {
-            Self.log.error("Initialization failed: boardSize \(boardSize) must be ≥ 1")
+        guard boardSize >= 1, boardSize * boardSize < Int.bitWidth else {
+            Self.log.error("Initialization failed: boardSize \(boardSize) out of range 1…7")
             return nil
         }
         self.boardSize = boardSize
+        self.fullBoardMask = (1 << (boardSize * boardSize)) &- 1
         if GameLogic.cachedWinningPatterns[boardSize] == nil {
             Self.log.debug("Generating winning patterns for board size \(boardSize)")
             GameLogic.cachedWinningPatterns[boardSize] = GameLogic.generateWinningPatterns(boardSize: boardSize)
@@ -155,11 +158,6 @@ public final class GameLogic {
 
     private static func generateWinningPatterns(boardSize: Int) -> [Int] {
         let n = boardSize
-        let total = n * n
-        guard total <= Int.bitWidth else {
-            log.error("Board size \(n) exceeds Int bit width")
-            return []
-        }
         let rows      = (0..<n).map { r in (0..<n).reduce(0) { $0 | (1 << (r * n + $1)) } }
         let cols      = (0..<n).map { c in (0..<n).reduce(0) { $0 | (1 << ($1 * n + c)) } }
         let diag      = (0..<n).reduce(0) { $0 | (1 << ($1 * n + $1)) }
@@ -180,9 +178,7 @@ public final class GameLogic {
     }
 
     private func checkDraw() -> Bool {
-        let total = boardSize * boardSize
-        guard total <= Int.bitWidth else { return false }
-        return (xBoard | oBoard) == (1 << total) - 1
+        (xBoard | oBoard) == fullBoardMask
     }
 }
 

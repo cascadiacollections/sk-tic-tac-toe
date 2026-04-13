@@ -247,17 +247,22 @@ final class GameLogicTests {
 
     // MARK: - Larger Board Tests
 
-    // Argument for 4x4 draw test (moved outside @Test and made static)
-     // Make this a static property
-    private static let fourByFourDrawArgument: (moves: [(Int, Int)], expectedState: GameState) = (
-        moves: [
-             (0,0), (0,1), (0,2), (0,3),
-             (1,1), (1,0), (1,3), (1,2),
-             (2,2), (2,3), (2,1), (2,0),
-             (3,3), (3,2), (3,0), (3,1)
-         ], // This is one possible draw sequence
-        expectedState: .draw
-    )
+    @Test("Draw Condition on 4x4 Board")
+    func testDrawConditionOn4x4Board() {
+        guard let logic = GameLogic(boardSize: 4) else {
+            #expect(Bool(false), "GameLogic should initialize successfully with size 4")
+            return
+        }
+        // Verified draw sequence — no row/col/diagonal win at any intermediate step
+        let drawMoves: [(Int, Int)] = [
+            (0, 0), (0, 2), (0, 1), (1, 0),
+            (0, 3), (1, 1), (1, 2), (1, 3),
+            (2, 0), (2, 2), (2, 1), (2, 3),
+            (3, 2), (3, 0), (3, 3), (3, 1)
+        ]
+        makeMoves(logic, moves: drawMoves)
+        #expect(logic.gameState == .draw, "Expected Draw on 4x4 board filled without a win")
+    }
 
 
     @Test("Win Condition on 4x4 Board (Row)")
@@ -414,5 +419,44 @@ final class GameLogicTests {
          #expect(oWinningCoords != nil, "O's Winning pattern should not be nil")
           #expect(Set(oWinningCoords!.map { "\($0.row),\($0.col)" }) == Set(expectedOCoords.map { "\($0.row),\($0.col)" }), "O's winning coordinates should match diagonal /")
           #expect(oWinningCoords!.count == logicO.boardSize, "O's Winning coordinates count should match board size")
+    }
+
+    // MARK: - Subscript Access Test
+
+    @Test("Subscript Access")
+    func testSubscriptAccess() {
+        guard let logic = GameLogic(boardSize: 3) else {
+            #expect(Bool(false), "GameLogic should initialize successfully")
+            return
+        }
+        #expect(logic[0, 0] == nil, "Subscript should return nil for empty cell")
+        _ = logic.makeMove(row: 0, col: 0) // X
+        #expect(logic[0, 0] == .x, "Subscript should return .x after X's move")
+        _ = logic.makeMove(row: 1, col: 1) // O
+        #expect(logic[1, 1] == .o, "Subscript should return .o after O's move")
+        #expect(logic[-1, 0] == nil, "Subscript should return nil for out-of-bounds")
+        #expect(logic[0, 3] == nil, "Subscript should return nil for out-of-bounds col")
+    }
+
+    // MARK: - Board Size Validation Tests
+
+    @Test("Initialization Fails for Board Size 8 (overflow)")
+    func testInitFailsForBoardSize8() {
+        let logic = GameLogic(boardSize: 8)
+        #expect(logic == nil, "GameLogic should not initialize with size 8 (64 bits = overflow)")
+    }
+
+    @Test("Initialization Fails for Board Size 10")
+    func testInitFailsForBoardSize10() {
+        let logic = GameLogic(boardSize: 10)
+        #expect(logic == nil, "GameLogic should not initialize with size 10 (100 > 64)")
+    }
+
+    @Test("Maximum Valid Board Size is 7x7")
+    func testMaxValidBoardSize() {
+        let logic = GameLogic(boardSize: 7)
+        #expect(logic != nil, "GameLogic should initialize with size 7 (49 < 64)")
+        #expect(logic?.boardSize == 7)
+        #expect(logic?.gameState == .ongoing)
     }
 }

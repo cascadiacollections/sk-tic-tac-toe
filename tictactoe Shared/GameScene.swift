@@ -9,6 +9,14 @@ typealias GameColor = UIColor
 #elseif os(macOS)
 import AppKit
 typealias GameColor = NSColor
+
+extension NSColor {
+    static var label: NSColor { .labelColor }
+    static var secondaryLabel: NSColor { .secondaryLabelColor }
+    static var systemBackground: NSColor { .windowBackgroundColor }
+    static var systemGray3: NSColor { .systemGray }
+    static var systemGray6: NSColor { .controlBackgroundColor }
+}
 #endif
 
 // MARK: - GameScene
@@ -34,6 +42,7 @@ class GameScene: SKScene {
     private var xWins = 0
     private var oWins = 0
     private var draws = 0
+    private var isResetting = false
 
     // HUD nodes
     private var turnIndicatorLabel: SKLabelNode?
@@ -73,6 +82,11 @@ class GameScene: SKScene {
 
     override func didMove(to view: SKView) {
         Self.log.debug("didMove size=\(self.size.width)x\(self.size.height)")
+        setupBoard()
+    }
+
+    override func didChangeSize(_ oldSize: CGSize) {
+        guard oldSize != size, boardNode != nil else { return }
         setupBoard()
     }
 
@@ -157,7 +171,7 @@ class GameScene: SKScene {
         case .won, .draw:
             turnIndicatorLabel?.isHidden = true
         }
-        scoreLabel?.text = "❌ \(xWins)   ·   🤝 \(draws)   ·   ⭕ \(oWins)"
+        scoreLabel?.text = "X: \(xWins)   ·   Draw: \(draws)   ·   O: \(oWins)"
     }
 
     // MARK: - Coordinate Helpers
@@ -192,6 +206,7 @@ class GameScene: SKScene {
 #endif
 
     private func handleInteraction(at location: CGPoint) {
+        guard !isResetting else { return }
         if isGameOver { resetGame(); return }
         guard let (row, col) = cellCoordinates(from: location) else { return }
         let mover = gameLogic.currentPlayer
@@ -329,6 +344,11 @@ class GameScene: SKScene {
     // MARK: - Reset
 
     func resetGame() {
+        guard !isResetting else { return }
+        isResetting = true
+
+        gameLogic.reset()
+
         childNode(withName: "//gameOverContainer")?.run(.sequence([
             .fadeOut(withDuration: 0.15),
             .removeFromParent()
@@ -339,7 +359,6 @@ class GameScene: SKScene {
         ]))
         winningLineNode = nil
 
-        // Animate symbols out, then rebuild cell contents
         for row in 0..<boardSize {
             for col in 0..<boardSize {
                 guard let cellOpt = cellNodes[safe: row]?[safe: col],
@@ -356,7 +375,6 @@ class GameScene: SKScene {
 
         run(.wait(forDuration: 0.18)) { [weak self] in
             guard let self else { return }
-            self.gameLogic.reset()
             for row in 0..<self.boardSize {
                 for col in 0..<self.boardSize {
                     guard let cellOpt = self.cellNodes[safe: row]?[safe: col],
@@ -366,6 +384,7 @@ class GameScene: SKScene {
                 }
             }
             self.updateHUD()
+            self.isResetting = false
         }
 
         Self.log.info("Game reset")

@@ -18,16 +18,6 @@
   "testTargets" : [
     {
       "parallelizable" : true,
-      "skippedTests" : {
-        "suites" : [
-          {
-            "name" : "GameLogicTests",
-            "testFunctions" : [
-              "testDrawConditionOnFourByFourBoard(moves:expectedState:)"
-            ]
-          }
-        ]
-      },
       "target" : {
         "containerPath" : "container:tictactoe.xcodeproj",
         "identifier" : "0B71F66D2CD5E78D007B1D5C",
