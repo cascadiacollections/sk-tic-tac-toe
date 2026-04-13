@@ -519,7 +519,9 @@ final class GameLogicTests {
         #expect(coords != nil, "Winning coordinates should be available after restore")
         #expect(coords?.count == 3, "Should have 3 winning coordinates")
         let expected: Set<String> = ["0,0", "0,1", "0,2"]
-        #expect(Set(coords!.map { "\($0.row),\($0.col)" }) == expected, "Winning row 0 should be restored")
+        if let coords {
+            #expect(Set(coords.map { "\($0.row),\($0.col)" }) == expected, "Winning row 0 should be restored")
+        }
     }
 
     @Test("Snapshot round-trip preserves draw state")
