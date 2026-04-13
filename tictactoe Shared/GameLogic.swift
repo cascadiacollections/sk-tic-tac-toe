@@ -195,8 +195,28 @@ public final class GameLogic {
     /// - Returns: `nil` if the snapshot's board size is invalid.
     public convenience init?(snapshot: GameSnapshot) {
         self.init(boardSize: snapshot.boardSize)
-        self.xBoard = snapshot.xBoard
-        self.oBoard = snapshot.oBoard
+
+        let validMask = fullBoardMask
+        let xBoard = snapshot.xBoard
+        let oBoard = snapshot.oBoard
+
+        guard xBoard >= 0, oBoard >= 0 else {
+            Self.log.error("Failed to restore snapshot: negative bitboard value")
+            return nil
+        }
+
+        guard (xBoard & oBoard) == 0 else {
+            Self.log.error("Failed to restore snapshot: overlapping bitboards")
+            return nil
+        }
+
+        guard ((xBoard | oBoard) & ~validMask) == 0 else {
+            Self.log.error("Failed to restore snapshot: bitboard contains out-of-range bits")
+            return nil
+        }
+
+        self.xBoard = xBoard
+        self.oBoard = oBoard
         self.currentPlayer = snapshot.currentPlayer
         self.gameState = snapshot.gameState
         // Recompute the winning pattern so `getWinningPatternCoordinates()`
