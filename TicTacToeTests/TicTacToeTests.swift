@@ -108,7 +108,7 @@ final class GameLogicTests {
         // Attempt the same move again
         let invalidMoveOutcome = logic.makeMove(row: 0, col: 0)
         // Use the specific failure enum case from MoveOutcome
-        #expect(invalidMoveOutcome == .failure_positionTaken, "Expected move on taken position to return .failure_positionTaken")
+        #expect(invalidMoveOutcome == .failurePositionTaken, "Expected move on taken position to return .failurePositionTaken")
         #expect(logic.getPlayerAt(row: 0, col: 0) == .x, "The player at (0,0) should still be X") // Verify state didn't change
     }
 
@@ -120,10 +120,10 @@ final class GameLogicTests {
          }
 
          let outcomeNegativeRow = logic.makeMove(row: -1, col: 0)
-         #expect(outcomeNegativeRow == .failure_invalidCoordinates, "Expected out of bounds move (negative row) to fail")
+         #expect(outcomeNegativeRow == .failureInvalidCoordinates, "Expected out of bounds move (negative row) to fail")
 
          let outcomeTooLargeCol = logic.makeMove(row: 0, col: logic.boardSize)
-          #expect(outcomeTooLargeCol == .failure_invalidCoordinates, "Expected out of bounds move (col too large) to fail")
+          #expect(outcomeTooLargeCol == .failureInvalidCoordinates, "Expected out of bounds move (col too large) to fail")
 
          #expect(logic.gameState == .ongoing, "Game state should remain ongoing after invalid moves")
          #expect(logic.currentPlayer == .x, "Current player should not change after invalid moves")
@@ -145,7 +145,7 @@ final class GameLogicTests {
         let moveAfterWinOutcome = logic.makeMove(row: 2, col: 2)
 
         // Use the specific failure enum case
-        #expect(moveAfterWinOutcome == .failure_gameAlreadyOver, "Expected move after game win to return .failure_gameAlreadyOver")
+        #expect(moveAfterWinOutcome == .failureGameAlreadyOver, "Expected move after game win to return .failureGameAlreadyOver")
          #expect(logic.getPlayerAt(row: 2, col: 2) == nil, "Cell should remain empty after failed move on game over")
     }
 
@@ -458,5 +458,171 @@ final class GameLogicTests {
         #expect(logic != nil, "GameLogic should initialize with size 7 (49 < 64)")
         #expect(logic?.boardSize == 7)
         #expect(logic?.gameState == .ongoing)
+    }
+
+    // MARK: - Snapshot / Restore Tests
+
+    @Test("Snapshot round-trip preserves board, current player, and state for ongoing game")
+    func testSnapshotRoundTripOngoing() throws {
+        guard let logic = GameLogic(boardSize: 3) else {
+            #expect(Bool(false), "GameLogic should initialize successfully")
+            return
+        }
+        // X: (0,0), O: (1,1), X: (0,1)
+        _ = logic.makeMove(row: 0, col: 0)
+        _ = logic.makeMove(row: 1, col: 1)
+        _ = logic.makeMove(row: 0, col: 1)
+
+        let snap = logic.snapshot()
+        guard let restored = GameLogic.restored(from: snap) else {
+            #expect(Bool(false), "GameLogic should restore from a valid snapshot")
+            return
+        }
+
+        #expect(restored.boardSize == logic.boardSize, "boardSize should match after round-trip")
+        #expect(restored.gameState == .ongoing, "gameState should be ongoing after round-trip")
+        #expect(restored.currentPlayer == logic.currentPlayer, "currentPlayer should match after round-trip")
+
+        for r in 0..<logic.boardSize {
+            for c in 0..<logic.boardSize {
+                #expect(
+                    restored.getPlayerAt(row: r, col: c) == logic.getPlayerAt(row: r, col: c),
+                    "Cell (\(r),\(c)) should match after round-trip"
+                )
+            }
+        }
+    }
+
+    @Test("Snapshot round-trip preserves won state and winning coordinates")
+    func testSnapshotRoundTripWon() throws {
+        guard let logic = GameLogic(boardSize: 3) else {
+            #expect(Bool(false), "GameLogic should initialize successfully")
+            return
+        }
+        // Drive X to win the top row: X(0,0) O(1,0) X(0,1) O(1,1) X(0,2)
+        _ = logic.makeMove(row: 0, col: 0)
+        _ = logic.makeMove(row: 1, col: 0)
+        _ = logic.makeMove(row: 0, col: 1)
+        _ = logic.makeMove(row: 1, col: 1)
+        _ = logic.makeMove(row: 0, col: 2)
+
+        #expect(logic.gameState == .won(.x), "Setup should result in X winning")
+
+        let snap = logic.snapshot()
+        guard let restored = GameLogic.restored(from: snap) else {
+            #expect(Bool(false), "GameLogic should restore from a won-state snapshot")
+            return
+        }
+
+        #expect(restored.gameState == .won(.x), "Restored game should show X winning")
+        let coords = restored.getWinningPatternCoordinates()
+        #expect(coords != nil, "Winning coordinates should be available after restore")
+        #expect(coords?.count == 3, "Should have 3 winning coordinates")
+        let expected: Set<String> = ["0,0", "0,1", "0,2"]
+        if let coords {
+            #expect(Set(coords.map { "\($0.row),\($0.col)" }) == expected, "Winning row 0 should be restored")
+        }
+    }
+
+    @Test("Snapshot round-trip preserves draw state")
+    func testSnapshotRoundTripDraw() throws {
+        guard let logic = GameLogic(boardSize: 3) else {
+            #expect(Bool(false), "GameLogic should initialize successfully")
+            return
+        }
+        // Draw sequence on a 3x3 — produces:
+        // X O X
+        // X X O
+        // O X O
+        let drawMoves: [(Int, Int)] = [
+            (0, 0), (0, 1), (0, 2), (1, 2),
+            (1, 0), (2, 0), (1, 1), (2, 2),
+            (2, 1)
+        ]
+        makeMoves(logic, moves: drawMoves)
+        #expect(logic.gameState == .draw, "Setup should result in a draw")
+
+        let snap = logic.snapshot()
+        guard let restored = GameLogic.restored(from: snap) else {
+            #expect(Bool(false), "GameLogic should restore from a draw-state snapshot")
+            return
+        }
+
+        #expect(restored.gameState == .draw, "Restored game should show draw")
+        for r in 0..<logic.boardSize {
+            for c in 0..<logic.boardSize {
+                #expect(
+                    restored.getPlayerAt(row: r, col: c) == logic.getPlayerAt(row: r, col: c),
+                    "Cell (\(r),\(c)) should match after draw round-trip"
+                )
+            }
+        }
+    }
+
+    @Test("Snapshot round-trip works for 4x4 board")
+    func testSnapshotRoundTrip4x4() throws {
+        guard let logic = GameLogic(boardSize: 4) else {
+            #expect(Bool(false), "GameLogic should initialize successfully with size 4")
+            return
+        }
+        _ = logic.makeMove(row: 0, col: 0) // X
+        _ = logic.makeMove(row: 3, col: 3) // O
+        _ = logic.makeMove(row: 2, col: 1) // X
+
+        let snap = logic.snapshot()
+        guard let restored = GameLogic.restored(from: snap) else {
+            #expect(Bool(false), "GameLogic should restore from a 4x4 snapshot")
+            return
+        }
+
+        #expect(restored.boardSize == 4, "boardSize should be 4 after round-trip")
+        #expect(restored.gameState == .ongoing, "gameState should be ongoing")
+        #expect(restored.currentPlayer == logic.currentPlayer, "currentPlayer should match")
+        for r in 0..<4 {
+            for c in 0..<4 {
+                #expect(
+                    restored.getPlayerAt(row: r, col: c) == logic.getPlayerAt(row: r, col: c),
+                    "Cell (\(r),\(c)) should match on 4x4 after round-trip"
+                )
+            }
+        }
+    }
+
+    @Test("Snapshot restore returns nil for invalid board size")
+    func testSnapshotRestoreFailsForInvalidBoardSize() {
+        let snap = GameSnapshot(boardSize: 0, xBoard: 0, oBoard: 0, currentPlayer: .x, gameState: .ongoing)
+        let restored = GameLogic.restored(from: snap)
+        #expect(restored == nil, "Restore should fail for boardSize 0")
+    }
+
+    @Test("Snapshot restore returns nil for xBoard with high bits (negative when cast to Int)")
+    func testSnapshotRestoreFailsForHighBitXBoard() {
+        // UInt64.max converts to Int(-1) — rejected by the >= 0 guard
+        let snap = GameSnapshot(boardSize: 3, xBoard: .max, oBoard: 0, currentPlayer: .x, gameState: .ongoing)
+        let restored = GameLogic.restored(from: snap)
+        #expect(restored == nil, "Restore should fail when xBoard overflows to negative Int")
+    }
+
+    @Test("Snapshot restore returns nil for oBoard with high bits (negative when cast to Int)")
+    func testSnapshotRestoreFailsForHighBitOBoard() {
+        let snap = GameSnapshot(boardSize: 3, xBoard: 0, oBoard: .max, currentPlayer: .x, gameState: .ongoing)
+        let restored = GameLogic.restored(from: snap)
+        #expect(restored == nil, "Restore should fail when oBoard overflows to negative Int")
+    }
+
+    @Test("Snapshot restore returns nil for overlapping bitboards")
+    func testSnapshotRestoreFailsForOverlappingBitboards() {
+        // Both boards claim bit 0 (cell 0,0)
+        let snap = GameSnapshot(boardSize: 3, xBoard: 1, oBoard: 1, currentPlayer: .o, gameState: .ongoing)
+        let restored = GameLogic.restored(from: snap)
+        #expect(restored == nil, "Restore should fail when xBoard and oBoard overlap")
+    }
+
+    @Test("Snapshot restore returns nil for out-of-range bits")
+    func testSnapshotRestoreFailsForOutOfRangeBits() {
+        // Bit 9 is outside a 3x3 board mask (0b111111111 = 511)
+        let snap = GameSnapshot(boardSize: 3, xBoard: 1 << 9, oBoard: 0, currentPlayer: .x, gameState: .ongoing)
+        let restored = GameLogic.restored(from: snap)
+        #expect(restored == nil, "Restore should fail when bitboard contains out-of-range bits")
     }
 }

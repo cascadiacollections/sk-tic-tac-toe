@@ -26,15 +26,15 @@ class GameScene: SKScene {
 
     // MARK: - Properties
 
-    private(set) var boardNode: SKNode!
-    private(set) var cellNodes: [[SKSpriteNode?]] = []
-    private(set) var winningLineNode: SKShapeNode?
+    private var boardNode: SKNode!
+    private var cellNodes: [[SKSpriteNode?]] = []
+    private var winningLineNode: SKShapeNode?
 
     private let boardSize: Int
-    private(set) var gameLogic: GameLogic
+    private var gameLogic: GameLogic
 
-    private(set) var cellSize: CGFloat = 0
-    private(set) var boardOriginOffset: CGPoint = .zero
+    private var cellSize: CGFloat = 0
+    private var boardOriginOffset: CGPoint = .zero
 
     private var isGameOver: Bool { gameLogic.gameState != .ongoing }
 
@@ -47,6 +47,9 @@ class GameScene: SKScene {
     // HUD nodes
     private var turnIndicatorLabel: SKLabelNode?
     private var scoreLabel: SKLabelNode?
+    private var menuButtonNode: SKNode?
+    private var undoButtonNode: SKNode?
+    private var undoButtonLabel: SKLabelNode?
 
     private static let log = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
@@ -55,7 +58,7 @@ class GameScene: SKScene {
 
     // MARK: - Initialization
 
-    init?(boardSize: Int = 3, size: CGSize) {
+    init?(size: CGSize, boardSize: Int = 3) {
         guard let logic = GameLogic(boardSize: boardSize) else {
             Self.log.error("Failed to init GameLogic for boardSize=\(boardSize)")
             return nil
@@ -63,9 +66,23 @@ class GameScene: SKScene {
         self.boardSize = boardSize
         self.gameLogic = logic
         super.init(size: size)
-        anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        scaleMode = .aspectFill
-        backgroundColor = .clear
+        applySceneDefaults()
+    }
+
+    /// Creates a scene that restores a previously persisted in-progress game,
+    /// including its session scores.
+    init?(size: CGSize, restoring persisted: PersistedGame) {
+        guard let logic = GameLogic.restored(from: persisted.snapshot) else {
+            Self.log.error("Failed to restore GameLogic from snapshot")
+            return nil
+        }
+        self.boardSize = logic.boardSize
+        self.gameLogic = logic
+        super.init(size: size)
+        self.xWins = persisted.xWins
+        self.oWins = persisted.oWins
+        self.draws = persisted.draws
+        applySceneDefaults()
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -76,6 +93,12 @@ class GameScene: SKScene {
         boardSize = logic.boardSize
         gameLogic = logic
         super.init(coder: aDecoder)
+    }
+
+    private func applySceneDefaults() {
+        anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        scaleMode = .aspectFill
+        backgroundColor = .clear
     }
 
     // MARK: - Scene Lifecycle
@@ -93,9 +116,13 @@ class GameScene: SKScene {
     // MARK: - Board Setup
 
     private func setupBoard() {
-        children.forEach { $0.removeFromParent() }
+        removeAllActions()
+        children.forEach { $0.removeAllActions(); $0.removeFromParent() }
         turnIndicatorLabel = nil
         scoreLabel = nil
+        menuButtonNode = nil
+        undoButtonNode = nil
+        undoButtonLabel = nil
 
         boardNode = SKNode()
         boardNode.alpha = 0
@@ -104,9 +131,22 @@ class GameScene: SKScene {
         calculateBoardLayout()
         cellNodes = Array(repeating: Array(repeating: nil, count: boardSize), count: boardSize)
         drawBoardGrid()
+        renderExistingMoves()
         setupHUD()
 
         boardNode.run(.fadeIn(withDuration: 0.3))
+    }
+
+    /// Renders any pieces already placed in the underlying `gameLogic`.
+    /// Used when the scene is restored from a persisted snapshot.
+    private func renderExistingMoves() {
+        for row in 0..<boardSize {
+            for col in 0..<boardSize {
+                if let player = gameLogic.getPlayerAt(row: row, col: col) {
+                    updateTile(row: row, col: col, player: player, animated: false)
+                }
+            }
+        }
     }
 
     private func calculateBoardLayout() {
@@ -122,6 +162,8 @@ class GameScene: SKScene {
                 let cell = SKSpriteNode(color: .clear, size: CGSize(width: cellSize, height: cellSize))
                 cell.position = position(forRow: row, col: col)
                 cell.name = "cell_\(row)_\(col)"
+                cell.isAccessibilityElement = true
+                cell.accessibilityLabel = "Row \(row + 1), column \(col + 1), empty"
                 cell.addChild(makeCellBorderNode())
                 boardNode.addChild(cell)
                 cellNodes[row][col] = cell
@@ -157,7 +199,87 @@ class GameScene: SKScene {
         addChild(score)
         scoreLabel = score
 
+        setupMenuButton(boardDim: boardDim)
+        setupUndoButton(boardDim: boardDim)
+
         updateHUD()
+    }
+
+    private func setupMenuButton(boardDim: CGFloat) {
+        let buttonWidth = cellSize * 1.35
+        let buttonHeight = cellSize * 0.48
+
+        let (container, _) = makePillButton(
+            title: "≡ Menu",
+            name: "menuButton",
+            size: CGSize(width: buttonWidth, height: buttonHeight)
+        )
+        container.position = CGPoint(
+            x: -boardDim / 2 + buttonWidth / 2,
+            y: boardDim / 2 + cellSize * 0.42
+        )
+        addChild(container)
+        menuButtonNode = container
+    }
+
+    private func setupUndoButton(boardDim: CGFloat) {
+        let buttonWidth = cellSize * 1.35
+        let buttonHeight = cellSize * 0.48
+
+        let (container, label) = makePillButton(
+            title: "↶ Undo",
+            name: "undoButton",
+            size: CGSize(width: buttonWidth, height: buttonHeight)
+        )
+        container.position = CGPoint(
+            x: boardDim / 2 - buttonWidth / 2,
+            y: boardDim / 2 + cellSize * 0.42
+        )
+        addChild(container)
+        undoButtonNode = container
+        undoButtonLabel = label
+    }
+
+    /// Returns `true` when `location` (in scene coordinates) falls inside
+    /// the fixed-size rect of a pill button built by `makePillButton`.
+    private func pillButtonContains(_ button: SKNode, point location: CGPoint) -> Bool {
+        guard let data = button.userData,
+              let w = data["hitW"] as? CGFloat,
+              let h = data["hitH"] as? CGFloat else {
+            return button.calculateAccumulatedFrame().contains(location)
+        }
+        let origin = CGPoint(x: button.position.x - w / 2, y: button.position.y - h / 2)
+        return CGRect(origin: origin, size: CGSize(width: w, height: h)).contains(location)
+    }
+
+    /// Factory for rounded HUD buttons. Returns the container and its label so
+    /// callers can restyle the text (e.g. to show a disabled state).
+    private func makePillButton(title: String, name: String, size: CGSize) -> (SKNode, SKLabelNode) {
+        let container = SKNode()
+        container.name = name
+        container.zPosition = 6
+        container.userData = ["hitW": size.width, "hitH": size.height]
+        container.isAccessibilityElement = true
+        container.accessibilityLabel = title
+
+        let bg = SKShapeNode(
+            rect: CGRect(x: -size.width / 2, y: -size.height / 2, width: size.width, height: size.height),
+            cornerRadius: size.height * 0.3
+        )
+        bg.fillColor = GameColor.systemGray6
+        bg.strokeColor = GameColor.systemGray3
+        bg.lineWidth = 1.5
+        container.addChild(bg)
+
+        let label = SKLabelNode(text: title)
+        label.fontName = "HelveticaNeue-Medium"
+        label.fontSize = size.height * 0.45
+        label.fontColor = GameColor.label
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        container.addChild(label)
+
+        return (container, label)
     }
 
     private func updateHUD() {
@@ -171,7 +293,11 @@ class GameScene: SKScene {
         case .won, .draw:
             turnIndicatorLabel?.isHidden = true
         }
-        scoreLabel?.text = "X: \(xWins)   ·   Draw: \(draws)   ·   O: \(oWins)"
+        scoreLabel?.text = "X: \(xWins)   ·   Draws: \(draws)   ·   O: \(oWins)"
+
+        // Dim the Undo button when there's nothing to undo.
+        undoButtonNode?.alpha = gameLogic.canUndo ? 1.0 : 0.35
+        undoButtonLabel?.fontColor = gameLogic.canUndo ? GameColor.label : GameColor.secondaryLabel
     }
 
     // MARK: - Coordinate Helpers
@@ -207,6 +333,17 @@ class GameScene: SKScene {
 
     private func handleInteraction(at location: CGPoint) {
         guard !isResetting else { return }
+
+        // HUD buttons take precedence over any board interaction.
+        if let menu = menuButtonNode, pillButtonContains(menu, point: location) {
+            returnToMainMenu()
+            return
+        }
+        if let undo = undoButtonNode, pillButtonContains(undo, point: location) {
+            performUndo()
+            return
+        }
+
         if isGameOver { resetGame(); return }
         guard let (row, col) = cellCoordinates(from: location) else { return }
         let mover = gameLogic.currentPlayer
@@ -215,44 +352,126 @@ class GameScene: SKScene {
             Self.log.info("Move \(mover.symbol) at (\(row), \(col))")
             updateTile(row: row, col: col, player: mover)
             checkGameState()
-        case .failure_positionTaken:
+            persistCurrentState()
+        case .failurePositionTaken:
             Self.log.debug("Cell (\(row), \(col)) already taken")
             animateCellShake(row: row, col: col)
-        case .failure_invalidCoordinates:
+        case .failureInvalidCoordinates:
             Self.log.error("Invalid coords (\(row), \(col)) reached handleInteraction")
-        case .failure_gameAlreadyOver:
+        case .failureGameAlreadyOver:
             Self.log.debug("Move attempted after game ended")
         }
     }
 
+    // MARK: - Undo
+
+    private func performUndo() {
+        guard !isResetting, gameLogic.canUndo else { return }
+
+        // Capture the terminal state *before* the undo clears it, so we know
+        // whether to roll back a win or a draw from the session scores.
+        let priorState = gameLogic.gameState
+        guard let reverted = gameLogic.undo() else { return }
+        Self.log.info("Undid \(reverted.player.symbol) at (\(reverted.row), \(reverted.col))")
+
+        switch priorState {
+        case .won(let winner):
+            dismissGameOverUI()
+            if winner == .x { xWins = max(0, xWins - 1) } else { oWins = max(0, oWins - 1) }
+        case .draw:
+            dismissGameOverUI()
+            draws = max(0, draws - 1)
+        case .ongoing:
+            break
+        }
+
+        removeTile(row: reverted.row, col: reverted.col)
+        StatsStore.rollBack(priorState)
+        updateHUD()
+        persistCurrentState()
+    }
+
+    private func dismissGameOverUI() {
+        childNode(withName: "//gameOverContainer")?.removeFromParent()
+        winningLineNode?.removeFromParent()
+        winningLineNode = nil
+    }
+
+    private func removeTile(row: Int, col: Int) {
+        guard let cellOpt = cellNodes[safe: row]?[safe: col], let cell = cellOpt else { return }
+        cell.accessibilityLabel = "Row \(row + 1), column \(col + 1), empty"
+        for child in cell.children where child is SKLabelNode {
+            child.run(.sequence([
+                .scale(to: 0, duration: 0.08),
+                .removeFromParent()
+            ]))
+        }
+    }
+
+    // MARK: - Persistence
+
+    /// Saves the current logical state when a game is in progress; clears the
+    /// persisted slot once the game has ended so the next launch returns to
+    /// the main menu.
+    private func persistCurrentState() {
+        guard gameLogic.gameState == .ongoing else {
+            GamePersistence.clear()
+            return
+        }
+        let persisted = PersistedGame(
+            snapshot: gameLogic.snapshot(),
+            xWins: xWins,
+            oWins: oWins,
+            draws: draws
+        )
+        GamePersistence.save(persisted)
+    }
+
+    // MARK: - Navigation
+
+    private func returnToMainMenu() {
+        Self.log.info("Returning to main menu")
+        GamePersistence.clear()
+        guard let view else { return }
+        let menu = MainMenuScene(size: view.bounds.size)
+        menu.scaleMode = .aspectFill
+        view.presentScene(menu, transition: .fade(withDuration: 0.25))
+    }
+
     // MARK: - Rendering
 
-    private func updateTile(row: Int, col: Int, player: Player) {
+    private func updateTile(row: Int, col: Int, player: Player, animated: Bool = true) {
         guard let cellOpt = cellNodes[safe: row]?[safe: col],
               let cell = cellOpt else { return }
-        let label = SKLabelNode(text: player == .x ? "X" : "O")
+        let letter = player == .x ? "X" : "O"
+        let label = SKLabelNode(text: letter)
         label.fontSize = cellSize * 0.55
         label.fontColor = player == .x ? GameColor.systemRed : GameColor.systemBlue
         label.fontName = "HelveticaNeue-Bold"
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .center
-        label.setScale(0)
+        label.setScale(animated ? 0 : 1)
         cell.addChild(label)
-        label.run(.sequence([
-            .scale(to: 1.2, duration: 0.10),
-            .scale(to: 1.0, duration: 0.08)
-        ]))
+        cell.accessibilityLabel = "Row \(row + 1), column \(col + 1), \(letter)"
+        if animated {
+            label.run(.sequence([
+                .scale(to: 1.2, duration: 0.10),
+                .scale(to: 1.0, duration: 0.08)
+            ]))
+        }
     }
 
     private func checkGameState() {
         switch gameLogic.gameState {
         case .won(let winner):
             if winner == .x { xWins += 1 } else { oWins += 1 }
+            StatsStore.recordWin(for: winner)
             displayWinningLine(for: winner)
             displayGameOverMessage("\(winner == .x ? "X" : "O") Wins! 🎉", winner: winner)
             updateHUD()
         case .draw:
             draws += 1
+            StatsStore.recordDraw()
             displayGameOverMessage("It's a Draw! 🤝")
             updateHUD()
         case .ongoing:
@@ -348,16 +567,20 @@ class GameScene: SKScene {
         isResetting = true
 
         gameLogic.reset()
+        // Starting a fresh round — nothing to restore until the next move.
+        GamePersistence.clear()
 
         childNode(withName: "//gameOverContainer")?.run(.sequence([
             .fadeOut(withDuration: 0.15),
             .removeFromParent()
         ]))
-        winningLineNode?.run(.sequence([
-            .fadeOut(withDuration: 0.15),
-            .removeFromParent()
-        ]))
-        winningLineNode = nil
+        if let line = winningLineNode {
+            winningLineNode = nil
+            line.run(.sequence([
+                .fadeOut(withDuration: 0.15),
+                .removeFromParent()
+            ]))
+        }
 
         for row in 0..<boardSize {
             for col in 0..<boardSize {
