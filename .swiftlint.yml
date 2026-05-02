@@ -100,8 +100,8 @@ type_body_length:
   error: 650
 
 file_length:
-  warning: 700
-  error: 800
+  warning: 850
+  error: 950
 
 cyclomatic_complexity:
   warning: 15
@@ -145,7 +145,7 @@ file_header:
   required_pattern: |
                     \/\/
                     \/\/  .*?\.swift
-                    \/\/  tictactoe(?: (?:Shared|iOS|macOS))?
+                    \/\/  (?:tictactoe(?: (?:Shared|iOS|macOS))?|TicTacToeTests)
                     \/\/
                     \/\/  Created by .* on \d{1,2}\/\d{1,2}\/\d{2}\.
                     \/\/

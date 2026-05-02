@@ -236,18 +236,15 @@ final class GameLogicTests {
 
         makeMoves(logic, moves: drawMoves)
         #expect(logic.gameState == .draw, "Expected Draw on a 3x3 board filled without a win")
-         // Verify the board is full
-         let totalSquares = logic.boardSize * logic.boardSize
-         var occupiedCount = 0
-         for r in 0..<logic.boardSize {
-             for c in 0..<logic.boardSize {
-                 if logic.getPlayerAt(row: r, col: c) != nil {
-                     occupiedCount += 1
-                 }
-             }
-         }
-         #expect(occupiedCount == totalSquares, "Expected all cells to be occupied in a draw")
-         #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern in a draw")
+        let totalSquares = logic.boardSize * logic.boardSize
+        var occupiedCount = 0
+        for row in 0..<logic.boardSize {
+            for col in 0..<logic.boardSize where logic.getPlayerAt(row: row, col: col) != nil {
+                occupiedCount += 1
+            }
+        }
+        #expect(occupiedCount == totalSquares, "Expected all cells to be occupied in a draw")
+        #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern in a draw")
     }
 
 
@@ -497,39 +494,47 @@ final class GameLogicTests {
 
         #expect(logic.getWinningPatternCoordinates() == nil, "Winning pattern should be nil when game ongoing")
 
-         // Setup a win for X
+        // Setup a win for X
         _ = logic.makeMove(row: 1, col: 2) // X
         _ = logic.makeMove(row: 2, col: 0) // O
         let winMoveOutcome = logic.makeMove(row: 1, col: 0) // X wins row 1
         #expect(winMoveOutcome == .success, "Winning move should be successful")
         #expect(logic.gameState == .won(.x), "Game should be won for winning pattern test")
 
-         let winningCoords = logic.getWinningPatternCoordinates()
-         #expect(winningCoords != nil, "Winning pattern should not be nil when game is won")
-         // The winning coordinates are sorted by their linear index (row*size + col) in GameLogic
-         let expectedCoords: [(row: Int, col: Int)] = [(1,0), (1,1), (1,2)]
-         #expect(Set(winningCoords!.map { "\($0.row),\($0.col)" }) == Set(expectedCoords.map { "\($0.row),\($0.col)" }), "Winning coordinates should match row 1")
-         #expect(winningCoords!.count == logic.boardSize, "Winning coordinates count should match board size")
+        guard let winningCoords = logic.getWinningPatternCoordinates() else {
+            #expect(Bool(false), "Winning pattern should not be nil when game is won")
+            return
+        }
+        let expectedCoords: [(row: Int, col: Int)] = [(1, 0), (1, 1), (1, 2)]
+        #expect(
+            Set(winningCoords.map { "\($0.row),\($0.col)" }) == Set(expectedCoords.map { "\($0.row),\($0.col)" }),
+            "Winning coordinates should match row 1"
+        )
+        #expect(winningCoords.count == logic.boardSize, "Winning coordinates count should match board size")
 
-         // Setup a win for O (different pattern)
-         guard let logicO = GameLogic(boardSize: 3) else {
-              #expect(Bool(false), "GameLogic should initialize successfully for O win test")
-             return
-         }
-         _ = logicO.makeMove(row: 0, col: 0) // X
-         _ = logicO.makeMove(row: 0, col: 2) // O
-         _ = logicO.makeMove(row: 1, col: 0) // X
-         _ = logicO.makeMove(row: 1, col: 1) // O
-         _ = logicO.makeMove(row: 2, col: 2) // X
-         let oWinOutcome = logicO.makeMove(row: 2, col: 0) // O wins diag /
-         #expect(oWinOutcome == .success, "O winning move should be successful")
-         #expect(logicO.gameState == .won(.o), "Game should be won by O for winning pattern test")
-         let oWinningCoords = logicO.getWinningPatternCoordinates()
-         // Expected coords for anti-diagonal (sorted by linear index)
-         let expectedOCoords: [(row: Int, col: Int)] = [(0,2), (1,1), (2,0)]
-         #expect(oWinningCoords != nil, "O's Winning pattern should not be nil")
-          #expect(Set(oWinningCoords!.map { "\($0.row),\($0.col)" }) == Set(expectedOCoords.map { "\($0.row),\($0.col)" }), "O's winning coordinates should match diagonal /")
-          #expect(oWinningCoords!.count == logicO.boardSize, "O's Winning coordinates count should match board size")
+        // Setup a win for O (different pattern)
+        guard let logicO = GameLogic(boardSize: 3) else {
+            #expect(Bool(false), "GameLogic should initialize successfully for O win test")
+            return
+        }
+        _ = logicO.makeMove(row: 0, col: 0) // X
+        _ = logicO.makeMove(row: 0, col: 2) // O
+        _ = logicO.makeMove(row: 1, col: 0) // X
+        _ = logicO.makeMove(row: 1, col: 1) // O
+        _ = logicO.makeMove(row: 2, col: 2) // X
+        let oWinOutcome = logicO.makeMove(row: 2, col: 0) // O wins diag /
+        #expect(oWinOutcome == .success, "O winning move should be successful")
+        #expect(logicO.gameState == .won(.o), "Game should be won by O for winning pattern test")
+        guard let oWinningCoords = logicO.getWinningPatternCoordinates() else {
+            #expect(Bool(false), "O's winning pattern should not be nil")
+            return
+        }
+        let expectedOCoords: [(row: Int, col: Int)] = [(0, 2), (1, 1), (2, 0)]
+        #expect(
+            Set(oWinningCoords.map { "\($0.row),\($0.col)" }) == Set(expectedOCoords.map { "\($0.row),\($0.col)" }),
+            "O's winning coordinates should match diagonal /"
+        )
+        #expect(oWinningCoords.count == logicO.boardSize, "O's winning coordinates count should match board size")
     }
 
     // MARK: - Subscript Access Test
