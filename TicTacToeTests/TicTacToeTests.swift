@@ -52,12 +52,12 @@ final class GameLogicTests {
 
         #expect(logic.gameState == .ongoing, "Expected game to be in an ongoing state at start")
         #expect(logic.currentPlayer == .x, "Expected the first player to be X")
-        for r in 0..<logic.boardSize {
-            for c in 0..<logic.boardSize {
-                #expect(logic.getPlayerAt(row: r, col: c) == nil, "Expected cell (\(r), \(c)) to be empty initially")
+        for row in 0..<logic.boardSize {
+            for col in 0..<logic.boardSize {
+                #expect(logic.getPlayerAt(row: row, col: col) == nil, "Expected cell (\(row), \(col)) to be empty initially")
             }
         }
-         #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern initially")
+        #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern initially")
     }
 
     @Test("Initial Game State Test (4x4)")
@@ -364,12 +364,12 @@ final class GameLogicTests {
         // Verify state is back to initial
         #expect(logic.gameState == .ongoing, "Expected game state to be ongoing after reset")
         #expect(logic.currentPlayer == .x, "Expected current player to be X after reset")
-        for r in 0..<logic.boardSize {
-            for c in 0..<logic.boardSize {
-                #expect(logic.getPlayerAt(row: r, col: c) == nil, "Expected cell (\(r), \(c)) to be empty after reset")
+        for row in 0..<logic.boardSize {
+            for col in 0..<logic.boardSize {
+                #expect(logic.getPlayerAt(row: row, col: col) == nil, "Expected cell (\(row), \(col)) to be empty after reset")
             }
         }
-         #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern after reset")
+        #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern after reset")
     }
 
     // MARK: - Undo Tests
@@ -599,11 +599,11 @@ final class GameLogicTests {
         #expect(restored.gameState == .ongoing, "gameState should be ongoing after round-trip")
         #expect(restored.currentPlayer == logic.currentPlayer, "currentPlayer should match after round-trip")
 
-        for r in 0..<logic.boardSize {
-            for c in 0..<logic.boardSize {
+        for row in 0..<logic.boardSize {
+            for col in 0..<logic.boardSize {
                 #expect(
-                    restored.getPlayerAt(row: r, col: c) == logic.getPlayerAt(row: r, col: c),
-                    "Cell (\(r),\(c)) should match after round-trip"
+                    restored.getPlayerAt(row: row, col: col) == logic.getPlayerAt(row: row, col: col),
+                    "Cell (\(row),\(col)) should match after round-trip"
                 )
             }
         }
@@ -665,11 +665,11 @@ final class GameLogicTests {
         }
 
         #expect(restored.gameState == .draw, "Restored game should show draw")
-        for r in 0..<logic.boardSize {
-            for c in 0..<logic.boardSize {
+        for row in 0..<logic.boardSize {
+            for col in 0..<logic.boardSize {
                 #expect(
-                    restored.getPlayerAt(row: r, col: c) == logic.getPlayerAt(row: r, col: c),
-                    "Cell (\(r),\(c)) should match after draw round-trip"
+                    restored.getPlayerAt(row: row, col: col) == logic.getPlayerAt(row: row, col: col),
+                    "Cell (\(row),\(col)) should match after draw round-trip"
                 )
             }
         }
@@ -694,11 +694,11 @@ final class GameLogicTests {
         #expect(restored.boardSize == 4, "boardSize should be 4 after round-trip")
         #expect(restored.gameState == .ongoing, "gameState should be ongoing")
         #expect(restored.currentPlayer == logic.currentPlayer, "currentPlayer should match")
-        for r in 0..<4 {
-            for c in 0..<4 {
+        for row in 0..<4 {
+            for col in 0..<4 {
                 #expect(
-                    restored.getPlayerAt(row: r, col: c) == logic.getPlayerAt(row: r, col: c),
-                    "Cell (\(r),\(c)) should match on 4x4 after round-trip"
+                    restored.getPlayerAt(row: row, col: col) == logic.getPlayerAt(row: row, col: col),
+                    "Cell (\(row),\(col)) should match on 4x4 after round-trip"
                 )
             }
         }
