@@ -1,3 +1,10 @@
+//
+//  GameLogic.swift
+//  tictactoe Shared
+//
+//  Created by Kevin T. Coughlin on 10/29/24.
+//
+
 import Foundation
 import os
 
@@ -190,7 +197,9 @@ public final class GameLogic {
     /// - Returns: The move that was undone, or `nil` if there were no moves.
     @discardableResult
     public func undo() -> MoveRecord? {
-        guard let last = moveHistory.popLast() else { return nil }
+        guard let last = moveHistory.popLast() else {
+            return nil
+        }
         let bit = positionToBit(row: last.row, col: last.col)
         if last.player == .x {
             xBoard &= ~bit
@@ -206,7 +215,9 @@ public final class GameLogic {
 
     /// Returns the winning line coordinates when the game is won.
     public func getWinningPatternCoordinates() -> [(row: Int, col: Int)]? {
-        guard case .won = gameState, let pattern = winningPattern else { return nil }
+        guard case .won = gameState, let pattern = winningPattern else {
+            return nil
+        }
         let totalCells = boardSize * boardSize
         var coordinates: [(row: Int, col: Int)] = []
         coordinates.reserveCapacity(boardSize)
@@ -220,10 +231,16 @@ public final class GameLogic {
 
     /// Returns the player at the given board position, or `nil` if empty / out of bounds.
     public func getPlayerAt(row: Int, col: Int) -> Player? {
-        guard row >= 0, row < boardSize, col >= 0, col < boardSize else { return nil }
+        guard row >= 0, row < boardSize, col >= 0, col < boardSize else {
+            return nil
+        }
         let bit = positionToBit(row: row, col: col)
-        if xBoard & bit != 0 { return .x }
-        if oBoard & bit != 0 { return .o }
+        if xBoard & bit != 0 {
+            return .x
+        }
+        if oBoard & bit != 0 {
+            return .o
+        }
         return nil
     }
 
@@ -250,7 +267,9 @@ public final class GameLogic {
     /// the move history length matches the number of placed pieces.
     /// - Returns: `nil` if the snapshot is invalid or corrupt.
     public static func restored(from snapshot: GameSnapshot) -> GameLogic? {
-        guard let instance = GameLogic(boardSize: snapshot.boardSize) else { return nil }
+        guard let instance = GameLogic(boardSize: snapshot.boardSize) else {
+            return nil
+        }
 
         let xBoard = Int(Int64(bitPattern: snapshot.xBoard))
         let oBoard = Int(Int64(bitPattern: snapshot.oBoard))
@@ -293,11 +312,23 @@ public final class GameLogic {
     private func positionToBit(row: Int, col: Int) -> Int { 1 << (row * boardSize + col) }
 
     private static func generateWinningPatterns(boardSize: Int) -> [Int] {
-        let n = boardSize
-        let rows      = (0..<n).map { r in (0..<n).reduce(0) { $0 | (1 << (r * n + $1)) } }
-        let cols      = (0..<n).map { c in (0..<n).reduce(0) { $0 | (1 << ($1 * n + c)) } }
-        let diag      = (0..<n).reduce(0) { $0 | (1 << ($1 * n + $1)) }
-        let antiDiag  = (0..<n).reduce(0) { $0 | (1 << ($1 * n + (n - 1 - $1))) }
+        let dimension = boardSize
+        let rows = (0..<dimension).map { row in
+            (0..<dimension).reduce(0) { partialResult, column in
+                partialResult | (1 << (row * dimension + column))
+            }
+        }
+        let cols = (0..<dimension).map { column in
+            (0..<dimension).reduce(0) { partialResult, row in
+                partialResult | (1 << (row * dimension + column))
+            }
+        }
+        let diag = (0..<dimension).reduce(0) { partialResult, offset in
+            partialResult | (1 << (offset * dimension + offset))
+        }
+        let antiDiag = (0..<dimension).reduce(0) { partialResult, offset in
+            partialResult | (1 << (offset * dimension + (dimension - 1 - offset)))
+        }
         return rows + cols + [diag, antiDiag]
     }
 

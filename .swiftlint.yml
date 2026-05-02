@@ -120,6 +120,7 @@ identifier_name:
     error: 60
   excluded:
     - id
+    - o
     - x
     - y
     - z

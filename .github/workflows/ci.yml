@@ -64,7 +64,7 @@ jobs:
       - name: Select iOS simulator destination
         run: |
           ios_destination="$(
-            python3 -c "import json, subprocess, sys; devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j'], text=True)).get('devices', {}); match = next((f\"platform=iOS Simulator,id={device['udid']}\" for runtime, runtime_devices in sorted(devices.items(), reverse=True) if 'iOS' in runtime for device in runtime_devices if device.get('isAvailable') and device.get('name', '').startswith('iPhone')), ''); print(match) if match else sys.exit(1)"
+            xcodebuild -project "$PROJECT_FILE" -scheme "$IOS_SCHEME" -showdestinations 2>/dev/null | sed -n 's/.*platform:iOS Simulator, id:\\([^,]*\\),.*/platform=iOS Simulator,id=\\1/p' | head -n 1
           )"
           if [ -z "$ios_destination" ]; then
             echo "No available iPhone simulator found" >&2
@@ -88,7 +88,6 @@ jobs:
             -project "$PROJECT_FILE" \
             -scheme "$IOS_SCHEME" \
             -destination "$IOS_DESTINATION" \
-            -testPlan "$TEST_PLAN" \
             -enableCodeCoverage YES \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
@@ -106,7 +105,6 @@ jobs:
             -project "$PROJECT_FILE" \
             -scheme "$MACOS_SCHEME" \
             -destination "platform=macOS" \
-            -testPlan "$TEST_PLAN" \
             -enableCodeCoverage YES | xcpretty && exit ${PIPESTATUS[0]}
 
       - name: Generate code coverage report
