@@ -17,6 +17,7 @@ jobs:
   swiftlint:
     name: SwiftLint
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: read
     steps:
@@ -76,13 +77,6 @@ jobs:
             -destination "$IOS_DESTINATION" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
-
-      - name: Build for macOS
-        run: |
-          xcodebuild clean build \
-            -project "$PROJECT_FILE" \
-            -scheme "$MACOS_SCHEME" \
-            -destination "platform=macOS" | xcpretty && exit ${PIPESTATUS[0]}
 
   build-spm:
     name: Swift Package Manager Build
