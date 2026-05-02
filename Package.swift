@@ -23,10 +23,12 @@ let package = Package(
             exclude: [
                 "Assets.xcassets",
                 "GameScene.swift",
-                "MainMenuScene.swift",
-                "GamePersistence.swift"
+                "MainMenuScene.swift"
             ],
-            sources: ["GameLogic.swift"]
+            sources: [
+                "GameLogic.swift",
+                "GamePersistence.swift"
+            ]
         ),
         .testTarget(
             name: "TicTacToeCoreTests",

@@ -207,10 +207,15 @@ public final class GameLogic {
     /// Returns the winning line coordinates when the game is won.
     public func getWinningPatternCoordinates() -> [(row: Int, col: Int)]? {
         guard case .won = gameState, let pattern = winningPattern else { return nil }
-        return (0..<boardSize * boardSize)
-            .filter { (pattern & (1 << $0)) != 0 }
-            .map { ($0 / boardSize, $0 % boardSize) }
-            .sorted { $0.0 * boardSize + $0.1 < $1.0 * boardSize + $1.1 }
+        let totalCells = boardSize * boardSize
+        var coordinates: [(row: Int, col: Int)] = []
+        coordinates.reserveCapacity(boardSize)
+
+        for position in 0..<totalCells where (pattern & (1 << position)) != 0 {
+            coordinates.append((row: position / boardSize, col: position % boardSize))
+        }
+
+        return coordinates
     }
 
     /// Returns the player at the given board position, or `nil` if empty / out of bounds.
@@ -312,4 +317,3 @@ public final class GameLogic {
         (xBoard | oBoard) == fullBoardMask
     }
 }
-
