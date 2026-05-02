@@ -1,3 +1,10 @@
+//
+//  GameScene.swift
+//  tictactoe Shared
+//
+//  Created by Kevin T. Coughlin on 10/29/24.
+//
+
 import SpriteKit
 import os
 
@@ -23,10 +30,9 @@ extension NSColor {
 
 @MainActor
 class GameScene: SKScene {
-
     // MARK: - Properties
 
-    private var boardNode: SKNode!
+    private var boardNode: SKNode?
     private var cellNodes: [[SKSpriteNode?]] = []
     private var winningLineNode: SKShapeNode?
 
@@ -126,9 +132,10 @@ class GameScene: SKScene {
         undoButtonNode = nil
         undoButtonLabel = nil
 
-        boardNode = SKNode()
-        boardNode.alpha = 0
-        addChild(boardNode)
+        let board = SKNode()
+        board.alpha = 0
+        boardNode = board
+        addChild(board)
 
         calculateBoardLayout()
         cellNodes = Array(repeating: Array(repeating: nil, count: boardSize), count: boardSize)
@@ -136,7 +143,7 @@ class GameScene: SKScene {
         renderExistingMoves()
         setupHUD()
 
-        boardNode.run(.fadeIn(withDuration: 0.3))
+        boardNode?.run(.fadeIn(withDuration: 0.3))
     }
 
     /// Renders any pieces already placed in the underlying `gameLogic`.
@@ -167,7 +174,7 @@ class GameScene: SKScene {
                 cell.isAccessibilityElement = true
                 cell.accessibilityLabel = "Row \(row + 1), column \(col + 1), empty"
                 cell.addChild(makeCellBorderNode())
-                boardNode.addChild(cell)
+                boardNode?.addChild(cell)
                 cellNodes[row][col] = cell
             }
         }
@@ -246,12 +253,12 @@ class GameScene: SKScene {
     /// the fixed-size rect of a pill button built by `makePillButton`.
     private func pillButtonContains(_ button: SKNode, point location: CGPoint) -> Bool {
         guard let data = button.userData,
-              let w = data["hitW"] as? CGFloat,
-              let h = data["hitH"] as? CGFloat else {
+              let hitWidth = data["hitW"] as? CGFloat,
+              let hitHeight = data["hitH"] as? CGFloat else {
             return button.calculateAccumulatedFrame().contains(location)
         }
-        let origin = CGPoint(x: button.position.x - w / 2, y: button.position.y - h / 2)
-        return CGRect(origin: origin, size: CGSize(width: w, height: h)).contains(location)
+        let origin = CGPoint(x: button.position.x - hitWidth / 2, y: button.position.y - hitHeight / 2)
+        return CGRect(origin: origin, size: CGSize(width: hitWidth, height: hitHeight)).contains(location)
     }
 
     /// Factory for rounded HUD buttons. Returns the container and its label so
@@ -287,10 +294,10 @@ class GameScene: SKScene {
     private func updateHUD() {
         switch gameLogic.gameState {
         case .ongoing:
-            let p = gameLogic.currentPlayer
-            let letter = p == .x ? "X" : "O"
+            let currentPlayer = gameLogic.currentPlayer
+            let letter = currentPlayer == .x ? "X" : "O"
             turnIndicatorLabel?.text = "\(letter)'s turn"
-            turnIndicatorLabel?.fontColor = p == .x ? GameColor.systemRed : GameColor.systemBlue
+            turnIndicatorLabel?.fontColor = currentPlayer == .x ? GameColor.systemRed : GameColor.systemBlue
             turnIndicatorLabel?.isHidden = false
         case .won, .draw:
             turnIndicatorLabel?.isHidden = true
@@ -314,7 +321,9 @@ class GameScene: SKScene {
     private func cellCoordinates(from location: CGPoint) -> (row: Int, col: Int)? {
         let boardDim = cellSize * CGFloat(boardSize)
         let boardRect = CGRect(origin: boardOriginOffset, size: CGSize(width: boardDim, height: boardDim))
-        guard boardRect.contains(location) else { return nil }
+        guard boardRect.contains(location) else {
+            return nil
+        }
         let col = max(0, min(Int((location.x - boardOriginOffset.x) / cellSize), boardSize - 1))
         let row = max(0, min(Int((location.y - boardOriginOffset.y) / cellSize), boardSize - 1))
         return (row, col)
@@ -518,10 +527,10 @@ class GameScene: SKScene {
             start.y -= half; end.y += half
         } else if (last.row - first.row) * (last.col - first.col) > 0 {
             start.x -= half; start.y -= half
-            end.x   += half; end.y   += half
+            end.x += half; end.y += half
         } else {
             start.x += half; start.y -= half
-            end.x   -= half; end.y   += half
+            end.x -= half; end.y += half
         }
 
         let path = CGMutablePath()
@@ -584,7 +593,9 @@ class GameScene: SKScene {
     // MARK: - Reset
 
     func resetGame() {
-        guard !isResetting else { return }
+        guard !isResetting else {
+            return
+        }
         isResetting = true
 
         gameLogic.reset()
@@ -618,7 +629,9 @@ class GameScene: SKScene {
         }
 
         run(.wait(forDuration: 0.18)) { [weak self] in
-            guard let self else { return }
+            guard let self else {
+                return
+            }
             for row in 0..<self.boardSize {
                 for col in 0..<self.boardSize {
                     guard let cellOpt = self.cellNodes[safe: row]?[safe: col],
@@ -638,7 +651,9 @@ class GameScene: SKScene {
 
     private func animateCellShake(row: Int, col: Int) {
         guard let cellOpt = cellNodes[safe: row]?[safe: col],
-              let cell = cellOpt else { return }
+              let cell = cellOpt else {
+            return
+        }
         cell.run(.sequence([
             .moveBy(x: -5, y: 0, duration: 0.04),
             .moveBy(x: 10, y: 0, duration: 0.04),
@@ -667,4 +682,3 @@ private extension Array {
         indices.contains(index) ? self[index] : nil
     }
 }
-
