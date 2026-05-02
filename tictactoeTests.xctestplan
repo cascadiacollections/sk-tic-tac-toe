@@ -11,8 +11,8 @@
   "defaultOptions" : {
     "targetForVariableExpansion" : {
       "containerPath" : "container:tictactoe.xcodeproj",
-      "identifier" : "0BD7A1E92C17A6B600378A1D",
-      "name" : "tictactoe macOS"
+      "identifier" : "0BD7A1C82C17A6B600378A1D",
+      "name" : "tictactoe iOS"
     }
   },
   "testTargets" : [

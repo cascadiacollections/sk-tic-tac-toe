@@ -9,7 +9,10 @@
 
 import Foundation
 import Testing
+
+#if canImport(TicTacToeCore)
 @testable import TicTacToeCore // Import the SPM module
+#endif
 
 @Suite
 @MainActor

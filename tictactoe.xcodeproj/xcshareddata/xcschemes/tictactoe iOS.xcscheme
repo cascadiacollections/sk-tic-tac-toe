@@ -35,17 +35,6 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "0BEDDA542CD1F99300DC5330"
-               BuildableName = "TicTacToeTests.xctest"
-               BlueprintName = "TicTacToeTests"
-               ReferencedContainer = "container:tictactoe.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
                BlueprintIdentifier = "0B71F66D2CD5E78D007B1D5C"
                BuildableName = "tictactoeTests.xctest"
                BlueprintName = "tictactoeTests"

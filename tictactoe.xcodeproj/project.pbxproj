@@ -25,6 +25,8 @@
 		0BEDDB022DF0010000DC5330 /* MainMenuScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEDDB002DF0010000DC5330 /* MainMenuScene.swift */; };
 		0BEDDB042DF0010000DC5330 /* GamePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEDDB032DF0010000DC5330 /* GamePersistence.swift */; };
 		0BEDDB052DF0010000DC5330 /* GamePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEDDB032DF0010000DC5330 /* GamePersistence.swift */; };
+		0BFA11012DF0F10000DC5330 /* GameLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEDDA5E2CD1F9D700DC5330 /* GameLogic.swift */; };
+		0BFA11022DF0F10000DC5330 /* GamePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BEDDB032DF0010000DC5330 /* GamePersistence.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -292,6 +294,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0BFA11012DF0F10000DC5330 /* GameLogic.swift in Sources */,
+				0BFA11022DF0F10000DC5330 /* GamePersistence.swift in Sources */,
 				0B71F6712CD5E78D007B1D5C /* tictactoeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
