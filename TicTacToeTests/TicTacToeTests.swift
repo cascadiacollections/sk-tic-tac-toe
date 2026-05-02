@@ -14,7 +14,6 @@ import Testing
 @Suite
 @MainActor
 final class GameLogicTests {
-
     // Helper to make a sequence of moves without checking individual outcomes (for setting up state)
     private func makeMoves(_ logic: GameLogic, moves: [(Int, Int)]) {
         moves.forEach { row, col in
@@ -252,7 +251,6 @@ final class GameLogicTests {
         #expect(logic.gameState == expectedState, message)
     }
 
-
     // MARK: - Draw Condition Test
 
     @Test("Draw Condition Test on 3x3 Board")
@@ -283,7 +281,6 @@ final class GameLogicTests {
         #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern in a draw")
     }
 
-
     // MARK: - Larger Board Tests
 
     @Test("Draw Condition on 4x4 Board")
@@ -302,7 +299,6 @@ final class GameLogicTests {
         makeMoves(logic, moves: drawMoves)
         #expect(logic.gameState == .draw, "Expected Draw on 4x4 board filled without a win")
     }
-
 
     @Test("Win Condition on 4x4 Board (Row)")
     func testWinConditionFourByFourRow() {
@@ -533,8 +529,7 @@ final class GameLogicTests {
          let outOfBoundsPlayer2 = logic.getPlayerAt(row: logic.boardSize, col: 0)
          #expect(outOfBoundsPlayer2 == nil, "getPlayerAt for out of bounds (row too large) should return nil")
 
-
-        _ = logic.makeMove(row: 1, col: 1) // X moves
+         _ = logic.makeMove(row: 1, col: 1) // X moves
         #expect(logic.getPlayerAt(row: 1, col: 1) == .x, "Cell (1,1) should be X after move")
 
         _ = logic.makeMove(row: 0, col: 0) // O moves
