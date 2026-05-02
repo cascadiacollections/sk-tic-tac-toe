@@ -88,7 +88,6 @@ public enum MoveOutcome: Equatable, Sendable {
 /// or call from `await MainActor.run { }` in concurrent contexts.
 @MainActor
 public final class GameLogic {
-
     private static let log = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
         category: "GameLogic"
@@ -290,7 +289,9 @@ public final class GameLogic {
 
         let pieceCount = xBoard.nonzeroBitCount + oBoard.nonzeroBitCount
         guard snapshot.moveHistory.count == pieceCount else {
-            log.error("Snapshot rejected: moveHistory count (\(snapshot.moveHistory.count)) != piece count (\(pieceCount))")
+            log.error(
+                "Snapshot rejected: moveHistory count (\(snapshot.moveHistory.count)) != piece count (\(pieceCount))"
+            )
             return nil
         }
 

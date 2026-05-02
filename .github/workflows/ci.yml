@@ -37,6 +37,11 @@ jobs:
       fail-fast: false
       matrix:
         xcode-version: ['16.0', 'latest-stable']
+        include:
+          - xcode-version: '16.0'
+            ios-version: '17-5'
+          - xcode-version: 'latest-stable'
+            ios-version: 'latest'
 
     steps:
       - name: Checkout repository
@@ -64,7 +69,7 @@ jobs:
       - name: Select iOS simulator destination
         run: |
           ios_destination="$(
-            xcodebuild -project "$PROJECT_FILE" -scheme "$IOS_SCHEME" -showdestinations 2>/dev/null | sed -n 's/.*platform:iOS Simulator, id:\\([^,]*\\),.*/platform=iOS Simulator,id=\\1/p' | head -n 1
+            python3 -c "import json, os, subprocess, sys; selector = os.environ['IOS_VERSION']; devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j'], text=True)).get('devices', {}); runtimes = sorted(devices.items(), reverse=True); match = next((f\"platform=iOS Simulator,id={device['udid']}\" for runtime, runtime_devices in runtimes if 'iOS' in runtime and (selector == 'latest' or selector in runtime) for device in runtime_devices if device.get('isAvailable') and device.get('name', '').startswith('iPhone')), ''); print(match) if match else sys.exit(1)"
           )"
           if [ -z "$ios_destination" ]; then
             echo "No available iPhone simulator found" >&2
@@ -72,6 +77,8 @@ jobs:
           fi
           echo "Using iOS simulator destination: $ios_destination"
           echo "IOS_DESTINATION=$ios_destination" >> "$GITHUB_ENV"
+        env:
+          IOS_VERSION: ${{ matrix.ios-version }}
 
       - name: Build for iOS Simulator
         run: |

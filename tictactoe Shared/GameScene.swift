@@ -109,7 +109,9 @@ class GameScene: SKScene {
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
-        guard oldSize != size, boardNode != nil else { return }
+        guard oldSize != size, boardNode != nil else {
+            return
+        }
         setupBoard()
     }
 
@@ -322,7 +324,9 @@ class GameScene: SKScene {
 
 #if os(iOS)
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
+        guard let touch = touches.first else {
+            return
+        }
         handleInteraction(at: touch.location(in: self))
     }
 #elseif os(macOS)
@@ -332,7 +336,9 @@ class GameScene: SKScene {
 #endif
 
     private func handleInteraction(at location: CGPoint) {
-        guard !isResetting else { return }
+        guard !isResetting else {
+            return
+        }
 
         // HUD buttons take precedence over any board interaction.
         if let menu = menuButtonNode, pillButtonContains(menu, point: location) {
@@ -344,8 +350,13 @@ class GameScene: SKScene {
             return
         }
 
-        if isGameOver { resetGame(); return }
-        guard let (row, col) = cellCoordinates(from: location) else { return }
+        if isGameOver {
+            resetGame()
+            return
+        }
+        guard let (row, col) = cellCoordinates(from: location) else {
+            return
+        }
         let mover = gameLogic.currentPlayer
         switch gameLogic.makeMove(row: row, col: col) {
         case .success:
@@ -366,12 +377,16 @@ class GameScene: SKScene {
     // MARK: - Undo
 
     private func performUndo() {
-        guard !isResetting, gameLogic.canUndo else { return }
+        guard !isResetting, gameLogic.canUndo else {
+            return
+        }
 
         // Capture the terminal state *before* the undo clears it, so we know
         // whether to roll back a win or a draw from the session scores.
         let priorState = gameLogic.gameState
-        guard let reverted = gameLogic.undo() else { return }
+        guard let reverted = gameLogic.undo() else {
+            return
+        }
         Self.log.info("Undid \(reverted.player.symbol) at (\(reverted.row), \(reverted.col))")
 
         switch priorState {
@@ -398,7 +413,9 @@ class GameScene: SKScene {
     }
 
     private func removeTile(row: Int, col: Int) {
-        guard let cellOpt = cellNodes[safe: row]?[safe: col], let cell = cellOpt else { return }
+        guard let cellOpt = cellNodes[safe: row]?[safe: col], let cell = cellOpt else {
+            return
+        }
         cell.accessibilityLabel = "Row \(row + 1), column \(col + 1), empty"
         for child in cell.children where child is SKLabelNode {
             child.run(.sequence([
@@ -432,7 +449,9 @@ class GameScene: SKScene {
     private func returnToMainMenu() {
         Self.log.info("Returning to main menu")
         GamePersistence.clear()
-        guard let view else { return }
+        guard let view else {
+            return
+        }
         let menu = MainMenuScene(size: view.bounds.size)
         menu.scaleMode = .aspectFill
         view.presentScene(menu, transition: .fade(withDuration: 0.25))
@@ -442,7 +461,9 @@ class GameScene: SKScene {
 
     private func updateTile(row: Int, col: Int, player: Player, animated: Bool = true) {
         guard let cellOpt = cellNodes[safe: row]?[safe: col],
-              let cell = cellOpt else { return }
+              let cell = cellOpt else {
+            return
+        }
         let letter = player == .x ? "X" : "O"
         let label = SKLabelNode(text: letter)
         label.fontSize = cellSize * 0.55
@@ -488,8 +509,8 @@ class GameScene: SKScene {
               let first = coords.first, let last = coords.last else { return }
 
         var start = position(forRow: first.row, col: first.col)
-        var end   = position(forRow: last.row,  col: last.col)
-        let half  = cellSize / 2
+        var end = position(forRow: last.row, col: last.col)
+        let half = cellSize / 2
 
         if first.row == last.row {
             start.x -= half; end.x += half
@@ -646,5 +667,4 @@ private extension Array {
         indices.contains(index) ? self[index] : nil
     }
 }
-
 
