@@ -1,5 +1,5 @@
-import SpriteKit
 import os
+import SpriteKit
 
 // MARK: - MainMenuScene
 
@@ -49,7 +49,9 @@ final class MainMenuScene: SKScene {
     }
 
     override func didChangeSize(_ oldSize: CGSize) {
-        guard oldSize != size, !children.isEmpty else { return }
+        guard oldSize != size, !children.isEmpty else {
+            return
+        }
         buildMenu()
     }
 
@@ -126,7 +128,9 @@ final class MainMenuScene: SKScene {
         statsLabel = label
 
         // Only show a reset control once there's actually something to clear.
-        guard stats.totalGames > 0 else { return }
+        guard stats.totalGames > 0 else {
+            return
+        }
 
         let buttonSize = CGSize(width: unit * 2.8, height: unit * 0.7)
         let reset = makeButton(
@@ -151,7 +155,9 @@ final class MainMenuScene: SKScene {
     }
 
     private func refreshStats() {
-        guard let label = statsLabel else { return }
+        guard let label = statsLabel else {
+            return
+        }
         let stats = StatsStore.load()
         label.text = statsText(from: stats)
         if stats.totalGames == 0 {
@@ -193,7 +199,9 @@ final class MainMenuScene: SKScene {
 
 #if os(iOS)
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
+        guard let touch = touches.first else {
+            return
+        }
         handleSelection(at: touch.location(in: self))
     }
 #elseif os(macOS)
@@ -235,7 +243,9 @@ final class MainMenuScene: SKScene {
     }
 
     private func startGame(boardSize: Int) {
-        guard let view else { return }
+        guard let view else {
+            return
+        }
         // Starting a brand-new game — ensure no stale persisted state survives.
         GamePersistence.clear()
         guard let scene = GameScene(size: view.bounds.size, boardSize: boardSize) else {

@@ -1,3 +1,10 @@
+//
+//  GamePersistence.swift
+//  tictactoe Shared
+//
+//  Created by Kevin T. Coughlin on 5/1/26.
+//
+
 import Foundation
 import os
 
@@ -48,7 +55,6 @@ public struct LifetimeStats: Codable, Sendable, Equatable {
 /// `UserDefaults`-backed persistence for lifetime game stats.
 @MainActor
 public enum StatsStore {
-
     public static let storageKey = "com.cascadiacollections.tictactoe.lifetimeStats.v1"
 
     private static let log = Logger(
@@ -60,7 +66,9 @@ public enum StatsStore {
 
     /// Loads the stored lifetime stats, or an empty record if none exist.
     public static func load() -> LifetimeStats {
-        guard let data = defaults.data(forKey: storageKey) else { return .init() }
+        guard let data = defaults.data(forKey: storageKey) else {
+            return .init()
+        }
         do {
             return try JSONDecoder().decode(LifetimeStats.self, from: data)
         } catch {
@@ -118,7 +126,6 @@ public enum StatsStore {
 /// main menu and jump straight back into the ongoing game.
 @MainActor
 public enum GamePersistence {
-
     public static let storageKey = "com.cascadiacollections.tictactoe.persistedGame.v1"
 
     private static let log = Logger(
@@ -144,7 +151,9 @@ public enum GamePersistence {
     /// Returns `nil` if nothing was saved, the payload is corrupt, or the
     /// saved game is no longer in progress (won / drawn).
     public static func load() -> PersistedGame? {
-        guard let data = defaults.data(forKey: storageKey) else { return nil }
+        guard let data = defaults.data(forKey: storageKey) else {
+            return nil
+        }
         do {
             let game = try JSONDecoder().decode(PersistedGame.self, from: data)
             guard game.isInProgress else {

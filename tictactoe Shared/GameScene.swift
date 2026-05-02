@@ -5,8 +5,8 @@
 //  Created by Kevin T. Coughlin on 10/29/24.
 //
 
-import SpriteKit
 import os
+import SpriteKit
 
 // MARK: - Platform Abstractions
 
@@ -543,7 +543,7 @@ class GameScene: SKScene {
         line.lineCap = .round
         line.zPosition = 1
         line.alpha = 0
-        boardNode.addChild(line)
+        boardNode?.addChild(line)
         line.run(.fadeIn(withDuration: 0.25))
         winningLineNode = line
     }
