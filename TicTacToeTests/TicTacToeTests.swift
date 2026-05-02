@@ -5,6 +5,8 @@
 //  Created by Kevin T. Coughlin on 10/29/24.
 //
 
+// swiftlint:disable file_length type_body_length
+
 import Foundation
 import Testing
 @testable import TicTacToeCore // Import the SPM module
@@ -15,7 +17,7 @@ final class GameLogicTests {
 
     // Helper to make a sequence of moves without checking individual outcomes (for setting up state)
     private func makeMoves(_ logic: GameLogic, moves: [(Int, Int)]) {
-        moves.forEach { (row, col) in
+        moves.forEach { row, col in
             // We typically expect moves to succeed in these sequences for setting up state,
             // but we ignore the outcome here to just apply the board state.
             // If you needed to test the outcomes *within* the sequence,
@@ -121,7 +123,10 @@ final class GameLogicTests {
             invalidMoveOutcome == .failurePositionTaken,
             "Expected move on taken position to return .failurePositionTaken"
         )
-        #expect(logic.getPlayerAt(row: 0, col: 0) == .x, "The player at (0,0) should still be X") // Verify state didn't change
+        #expect(
+            logic.getPlayerAt(row: 0, col: 0) == .x,
+            "The player at (0,0) should still be X"
+        ) // Verify state didn't change
     }
 
     @Test("Invalid Move Out of Bounds")
@@ -147,11 +152,10 @@ final class GameLogicTests {
         #expect(logic.currentPlayer == .x, "Current player should not change after invalid moves")
     }
 
-
     @Test("No Move After Game Ends")
     func testNoMoveAfterGameEnds() {
         guard let logic = GameLogic(boardSize: 3) else {
-             #expect(Bool(false), "GameLogic should initialize successfully")
+            #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
 
@@ -167,9 +171,11 @@ final class GameLogicTests {
             moveAfterWinOutcome == .failureGameAlreadyOver,
             "Expected move after game win to return .failureGameAlreadyOver"
         )
-        #expect(logic.getPlayerAt(row: 2, col: 2) == nil, "Cell should remain empty after failed move on game over")
+        #expect(
+            logic.getPlayerAt(row: 2, col: 2) == nil,
+            "Cell should remain empty after failed move on game over"
+        )
     }
-
 
     // MARK: - Win Condition Test Arguments (Moved outside @Test and made static)
 
@@ -216,9 +222,12 @@ final class GameLogicTests {
             expectedState: .won(.o),
             message: "O wins Diagonal \\"
         ),
-        (moves: [(0, 0), (0, 2), (1, 0), (1, 1), (2, 2), (2, 0)], expectedState: .won(.o), message: "O wins Diagonal /")
+        (
+            moves: [(0, 0), (0, 2), (1, 0), (1, 1), (2, 2), (2, 0)],
+            expectedState: .won(.o),
+            message: "O wins Diagonal /"
+        )
     ]
-
 
     // MARK: - Win Condition Tests
 
@@ -381,7 +390,10 @@ final class GameLogicTests {
         let move1Outcome = logic.makeMove(row: 0, col: 0) // X
         let move2Outcome = logic.makeMove(row: 1, col: 1) // O
         let move3Outcome = logic.makeMove(row: 0, col: 1) // X
-         #expect(move1Outcome == .success && move2Outcome == .success && move3Outcome == .success, "Initial moves should be successful")
+        #expect(
+            move1Outcome == .success && move2Outcome == .success && move3Outcome == .success,
+            "Initial moves should be successful"
+        )
 
         #expect(logic.currentPlayer == .o, "Expected player to be O before reset")
         #expect(logic.getPlayerAt(row: 0, col: 0) == .x, "Expected (0,0) to be X before reset")
@@ -396,7 +408,10 @@ final class GameLogicTests {
         #expect(logic.currentPlayer == .x, "Expected current player to be X after reset")
         for row in 0..<logic.boardSize {
             for col in 0..<logic.boardSize {
-                #expect(logic.getPlayerAt(row: row, col: col) == nil, "Expected cell (\(row), \(col)) to be empty after reset")
+                #expect(
+                    logic.getPlayerAt(row: row, col: col) == nil,
+                    "Expected cell (\(row), \(col)) to be empty after reset"
+                )
             }
         }
         #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern after reset")
@@ -491,7 +506,10 @@ final class GameLogicTests {
         _ = logic.makeMove(row: 2, col: 2) // X
 
         #expect(logic.undo() == MoveRecord(row: 2, col: 2, player: .x), "First undo should remove the most recent move")
-        #expect(logic.undo() == MoveRecord(row: 1, col: 1, player: .o), "Second undo should remove the next-most-recent move")
+        #expect(
+            logic.undo() == MoveRecord(row: 1, col: 1, player: .o),
+            "Second undo should remove the next-most-recent move"
+        )
         #expect(logic.getPlayerAt(row: 2, col: 2) == nil, "First undone cell should be empty")
         #expect(logic.getPlayerAt(row: 1, col: 1) == nil, "Second undone cell should be empty")
         #expect(logic.getPlayerAt(row: 0, col: 0) == .x, "The oldest move should remain")
@@ -858,3 +876,5 @@ final class GameLogicTests {
         #expect(StatsStore.load() == LifetimeStats(), "Corrupt stats payloads should decode to empty stats")
     }
 }
+
+// swiftlint:enable file_length type_body_length
