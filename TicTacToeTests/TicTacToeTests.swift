@@ -54,7 +54,10 @@ final class GameLogicTests {
         #expect(logic.currentPlayer == .x, "Expected the first player to be X")
         for row in 0..<logic.boardSize {
             for col in 0..<logic.boardSize {
-                #expect(logic.getPlayerAt(row: row, col: col) == nil, "Expected cell (\(row), \(col)) to be empty initially")
+                #expect(
+                    logic.getPlayerAt(row: row, col: col) == nil,
+                    "Expected cell (\(row), \(col)) to be empty initially"
+                )
             }
         }
         #expect(logic.getWinningPatternCoordinates() == nil, "Expected no winning pattern initially")
@@ -114,26 +117,35 @@ final class GameLogicTests {
         // Attempt the same move again
         let invalidMoveOutcome = logic.makeMove(row: 0, col: 0)
         // Use the specific failure enum case from MoveOutcome
-        #expect(invalidMoveOutcome == .failurePositionTaken, "Expected move on taken position to return .failurePositionTaken")
+        #expect(
+            invalidMoveOutcome == .failurePositionTaken,
+            "Expected move on taken position to return .failurePositionTaken"
+        )
         #expect(logic.getPlayerAt(row: 0, col: 0) == .x, "The player at (0,0) should still be X") // Verify state didn't change
     }
 
-     @Test("Invalid Move Out of Bounds")
-     func testInvalidMoveOutOfBounds() {
-         guard let logic = GameLogic(boardSize: 3) else {
-              #expect(Bool(false), "GameLogic should initialize successfully")
-             return
-         }
+    @Test("Invalid Move Out of Bounds")
+    func testInvalidMoveOutOfBounds() {
+        guard let logic = GameLogic(boardSize: 3) else {
+            #expect(Bool(false), "GameLogic should initialize successfully")
+            return
+        }
 
-         let outcomeNegativeRow = logic.makeMove(row: -1, col: 0)
-         #expect(outcomeNegativeRow == .failureInvalidCoordinates, "Expected out of bounds move (negative row) to fail")
+        let outcomeNegativeRow = logic.makeMove(row: -1, col: 0)
+        #expect(
+            outcomeNegativeRow == .failureInvalidCoordinates,
+            "Expected out of bounds move (negative row) to fail"
+        )
 
-         let outcomeTooLargeCol = logic.makeMove(row: 0, col: logic.boardSize)
-          #expect(outcomeTooLargeCol == .failureInvalidCoordinates, "Expected out of bounds move (col too large) to fail")
+        let outcomeTooLargeCol = logic.makeMove(row: 0, col: logic.boardSize)
+        #expect(
+            outcomeTooLargeCol == .failureInvalidCoordinates,
+            "Expected out of bounds move (col too large) to fail"
+        )
 
-         #expect(logic.gameState == .ongoing, "Game state should remain ongoing after invalid moves")
-         #expect(logic.currentPlayer == .x, "Current player should not change after invalid moves")
-     }
+        #expect(logic.gameState == .ongoing, "Game state should remain ongoing after invalid moves")
+        #expect(logic.currentPlayer == .x, "Current player should not change after invalid moves")
+    }
 
 
     @Test("No Move After Game Ends")
@@ -151,15 +163,20 @@ final class GameLogicTests {
         let moveAfterWinOutcome = logic.makeMove(row: 2, col: 2)
 
         // Use the specific failure enum case
-        #expect(moveAfterWinOutcome == .failureGameAlreadyOver, "Expected move after game win to return .failureGameAlreadyOver")
-         #expect(logic.getPlayerAt(row: 2, col: 2) == nil, "Cell should remain empty after failed move on game over")
+        #expect(
+            moveAfterWinOutcome == .failureGameAlreadyOver,
+            "Expected move after game win to return .failureGameAlreadyOver"
+        )
+        #expect(logic.getPlayerAt(row: 2, col: 2) == nil, "Cell should remain empty after failed move on game over")
     }
 
 
     // MARK: - Win Condition Test Arguments (Moved outside @Test and made static)
 
     // Make these static properties so they can be referenced by @Test
-    nonisolated(unsafe) private static let xWinArguments: [(moves: [(Int, Int)], expectedState: GameState, message: Comment)] = [
+    nonisolated(unsafe) private static let xWinArguments: [
+        (moves: [(Int, Int)], expectedState: GameState, message: Comment)
+    ] = [
         // Row Wins
         (moves: [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2)], expectedState: .won(.x), message: "X wins Row 0"),
         (moves: [(1, 0), (0, 0), (1, 1), (0, 1), (1, 2)], expectedState: .won(.x), message: "X wins Row 1"),
@@ -176,9 +193,15 @@ final class GameLogicTests {
     ]
 
     // Make this a static property so it can be referenced by @Test
-    nonisolated(unsafe) private static let oWinArguments: [(moves: [(Int, Int)], expectedState: GameState, message: Comment)] = [
+    nonisolated(unsafe) private static let oWinArguments: [
+        (moves: [(Int, Int)], expectedState: GameState, message: Comment)
+    ] = [
         // Row Wins (Need dummy X moves to make it O's turn for the winning move)
-        (moves: [(1, 0), (0, 0), (1, 1), (0, 1), (2, 2), (0, 2)], expectedState: .won(.o), message: "O wins Row 0"), // Added a dummy X move (2,2)
+        (
+            moves: [(1, 0), (0, 0), (1, 1), (0, 1), (2, 2), (0, 2)],
+            expectedState: .won(.o),
+            message: "O wins Row 0"
+        ), // Added a dummy X move (2,2)
         (moves: [(0, 0), (1, 0), (0, 1), (1, 1), (2, 2), (1, 2)], expectedState: .won(.o), message: "O wins Row 1"),
         (moves: [(0, 0), (2, 0), (0, 1), (2, 1), (1, 1), (2, 2)], expectedState: .won(.o), message: "O wins Row 2"),
 
@@ -188,7 +211,11 @@ final class GameLogicTests {
         (moves: [(0, 0), (0, 2), (1, 0), (1, 2), (1, 1), (2, 2)], expectedState: .won(.o), message: "O wins Column 2"),
 
         // Diagonal Wins
-        (moves: [(0, 1), (0, 0), (0, 2), (1, 1), (1, 0), (2, 2)], expectedState: .won(.o), message: "O wins Diagonal \\"),
+        (
+            moves: [(0, 1), (0, 0), (0, 2), (1, 1), (1, 0), (2, 2)],
+            expectedState: .won(.o),
+            message: "O wins Diagonal \\"
+        ),
         (moves: [(0, 0), (0, 2), (1, 0), (1, 1), (2, 2), (2, 0)], expectedState: .won(.o), message: "O wins Diagonal /")
     ]
 
@@ -335,7 +362,10 @@ final class GameLogicTests {
         #expect(logic.gameState == .won(.x), "Expected X to win immediately on a 1x1 board")
         let winningCoords = logic.getWinningPatternCoordinates()
         #expect(winningCoords?.count == 1, "Expected 1 winning coordinate on 1x1 win")
-        #expect(winningCoords?.first?.row == 0 && winningCoords?.first?.col == 0, "Expected winning coordinate to be (0,0)")
+        #expect(
+            winningCoords?.first?.row == 0 && winningCoords?.first?.col == 0,
+            "Expected winning coordinate to be (0,0)"
+        )
     }
 
     // MARK: - Reset Test
