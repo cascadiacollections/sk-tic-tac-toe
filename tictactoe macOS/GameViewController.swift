@@ -5,9 +5,9 @@
 //  Created by Kevin T. Coughlin on 6/10/24.
 //
 
+import os
 import Cocoa
 import SpriteKit
-import os
 
 @MainActor
 class GameViewController: NSViewController {

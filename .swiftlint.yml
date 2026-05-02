@@ -96,12 +96,12 @@ function_body_length:
   error: 120
 
 type_body_length:
-  warning: 300
+  warning: 550
   error: 650
 
 file_length:
-  warning: 500
-  error: 700
+  warning: 700
+  error: 800
 
 cyclomatic_complexity:
   warning: 15

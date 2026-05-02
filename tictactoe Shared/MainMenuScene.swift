@@ -1,3 +1,10 @@
+//
+//  MainMenuScene.swift
+//  tictactoe Shared
+//
+//  Created by Kevin T. Coughlin on 4/30/25.
+//
+
 import os
 import SpriteKit
 
@@ -11,7 +18,6 @@ import SpriteKit
 /// in-progress game — see `GameViewController`.
 @MainActor
 final class MainMenuScene: SKScene {
-
     // MARK: - Configuration
 
     /// Board sizes offered on the menu.

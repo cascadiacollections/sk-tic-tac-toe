@@ -274,7 +274,7 @@ final class GameLogicTests {
     @Test("Win Condition on 4x4 Board (Row)")
     func testWinConditionFourByFourRow() {
         guard let logic = GameLogic(boardSize: 4) else {
-             #expect(Bool(false), "GameLogic should initialize successfully")
+            #expect(Bool(false), "GameLogic should initialize successfully")
             return
         }
         let moves: [(Int, Int)] = [
@@ -285,42 +285,50 @@ final class GameLogicTests {
         ]
         makeMoves(logic, moves: moves)
         #expect(logic.gameState == .won(.x), "Expected X to win on 4x4 row 0")
-        // Optional: Verify winning coordinates
-        let expectedCoords: [(row: Int, col: Int)] = [(0,0), (0,1), (0,2), (0,3)]
-         let winningCoords = logic.getWinningPatternCoordinates()
-         #expect(winningCoords != nil, "Winning pattern should not be nil on win")
-         #expect(Set(winningCoords!.map { "\($0.row),\($0.col)" }) == Set(expectedCoords.map { "\($0.row),\($0.col)" }), "Winning coordinates should match row 0")
-         #expect(winningCoords!.count == logic.boardSize, "Winning coordinates count should match board size")
+        let expectedCoords: [(row: Int, col: Int)] = [(0, 0), (0, 1), (0, 2), (0, 3)]
+        guard let winningCoords = logic.getWinningPatternCoordinates() else {
+            #expect(Bool(false), "Winning pattern should not be nil on win")
+            return
+        }
+        #expect(
+            Set(winningCoords.map { "\($0.row),\($0.col)" }) == Set(expectedCoords.map { "\($0.row),\($0.col)" }),
+            "Winning coordinates should match row 0"
+        )
+        #expect(winningCoords.count == logic.boardSize, "Winning coordinates count should match board size")
     }
 
-     @Test("Win Condition on 4x4 Board (Diagonal)")
-     func testWinConditionFourByFourDiagonal() {
-         guard let logic = GameLogic(boardSize: 4) else {
-              #expect(Bool(false), "GameLogic should initialize successfully")
-             return
-         }
-         let moves: [(Int, Int)] = [
-             (0, 0), (0, 1), // X O
-             (1, 1), (0, 2), // X O
-             (2, 2), (0, 3), // X O
-             (3, 3)          // X wins diag \
-         ]
-         makeMoves(logic, moves: moves)
-         #expect(logic.gameState == .won(.x), "Expected X to win on 4x4 diagonal \\")
-          // Optional: Verify winning coordinates
-         let expectedCoords: [(row: Int, col: Int)] = [(0,0), (1,1), (2,2), (3,3)]
-          let winningCoords = logic.getWinningPatternCoordinates()
-          #expect(winningCoords != nil, "Winning pattern should not be nil on win")
-          #expect(Set(winningCoords!.map { "\($0.row),\($0.col)" }) == Set(expectedCoords.map { "\($0.row),\($0.col)" }), "Winning coordinates should match diagonal \\")
-           #expect(winningCoords!.count == logic.boardSize, "Winning coordinates count should match board size")
-     }
+    @Test("Win Condition on 4x4 Board (Diagonal)")
+    func testWinConditionFourByFourDiagonal() {
+        guard let logic = GameLogic(boardSize: 4) else {
+            #expect(Bool(false), "GameLogic should initialize successfully")
+            return
+        }
+        let moves: [(Int, Int)] = [
+            (0, 0), (0, 1), // X O
+            (1, 1), (0, 2), // X O
+            (2, 2), (0, 3), // X O
+            (3, 3)          // X wins diag \
+        ]
+        makeMoves(logic, moves: moves)
+        #expect(logic.gameState == .won(.x), "Expected X to win on 4x4 diagonal \\")
+        let expectedCoords: [(row: Int, col: Int)] = [(0, 0), (1, 1), (2, 2), (3, 3)]
+        guard let winningCoords = logic.getWinningPatternCoordinates() else {
+            #expect(Bool(false), "Winning pattern should not be nil on win")
+            return
+        }
+        #expect(
+            Set(winningCoords.map { "\($0.row),\($0.col)" }) == Set(expectedCoords.map { "\($0.row),\($0.col)" }),
+            "Winning coordinates should match diagonal \\"
+        )
+        #expect(winningCoords.count == logic.boardSize, "Winning coordinates count should match board size")
+    }
 
     // MARK: - Smallest Board Test
 
     @Test("Smallest Possible Board - 1x1")
     func testSmallestPossibleBoard() {
         guard let logic = GameLogic(boardSize: 1) else {
-             #expect(Bool(false), "GameLogic should initialize successfully with size 1")
+            #expect(Bool(false), "GameLogic should initialize successfully with size 1")
             return
         }
         // On a 1x1 board, the first move wins immediately
@@ -328,9 +336,9 @@ final class GameLogicTests {
 
         #expect(outcome == .success, "Move on 1x1 board should be successful")
         #expect(logic.gameState == .won(.x), "Expected X to win immediately on a 1x1 board")
-         let winningCoords = logic.getWinningPatternCoordinates()
-         #expect(winningCoords?.count == 1, "Expected 1 winning coordinate on 1x1 win")
-         #expect(winningCoords?.first?.row == 0 && winningCoords?.first?.col == 0, "Expected winning coordinate to be (0,0)")
+        let winningCoords = logic.getWinningPatternCoordinates()
+        #expect(winningCoords?.count == 1, "Expected 1 winning coordinate on 1x1 win")
+        #expect(winningCoords?.first?.row == 0 && winningCoords?.first?.col == 0, "Expected winning coordinate to be (0,0)")
     }
 
     // MARK: - Reset Test
