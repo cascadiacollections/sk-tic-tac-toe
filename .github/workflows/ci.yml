@@ -64,23 +64,7 @@ jobs:
       - name: Select iOS simulator destination
         run: |
           ios_destination="$(
-            xcrun simctl list devices available -j | python3 -c '
-import json
-import sys
-
-payload = json.load(sys.stdin)
-devices = payload.get("devices", {})
-
-for runtime, runtime_devices in sorted(devices.items(), reverse=True):
-    if "iOS" not in runtime:
-        continue
-    for device in runtime_devices:
-        if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
-            print(f"platform=iOS Simulator,id={device[\"udid\"]}")
-            raise SystemExit(0)
-
-raise SystemExit(1)
-'
+            python3 -c "import json, subprocess, sys; devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j'], text=True)).get('devices', {}); match = next((f\"platform=iOS Simulator,id={device['udid']}\" for runtime, runtime_devices in sorted(devices.items(), reverse=True) if 'iOS' in runtime for device in runtime_devices if device.get('isAvailable') and device.get('name', '').startswith('iPhone')), ''); print(match) if match else sys.exit(1)"
           )"
           if [ -z "$ios_destination" ]; then
             echo "No available iPhone simulator found" >&2
