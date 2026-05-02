@@ -1,4 +1,6 @@
 excluded:
+  - Package.swift
+  - scripts/benchmark.swift
   - .build
   - Carthage
   - Pods
@@ -108,8 +110,6 @@ cyclomatic_complexity:
 nesting:
   type_level:
     warning: 3
-  statement_level:
-    warning: 5
 
 identifier_name:
   min_length:
@@ -144,7 +144,7 @@ file_header:
   required_pattern: |
                     \/\/
                     \/\/  .*?\.swift
-                    \/\/  tictactoe
+                    \/\/  tictactoe(?: (?:Shared|iOS|macOS))?
                     \/\/
                     \/\/  Created by .* on \d{1,2}\/\d{1,2}\/\d{2}\.
                     \/\/

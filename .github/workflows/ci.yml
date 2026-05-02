@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   PROJECT_FILE: tictactoe.xcodeproj
@@ -33,15 +34,9 @@ jobs:
     permissions:
       contents: read
     strategy:
+      fail-fast: false
       matrix:
         xcode-version: ['16.0', 'latest-stable']
-        include:
-          - xcode-version: '16.0'
-            ios-version: '17.5'
-            macos-version: '14.5'
-          - xcode-version: 'latest-stable'
-            ios-version: 'latest'
-            macos-version: 'latest'
 
     steps:
       - name: Checkout repository
@@ -66,12 +61,40 @@ jobs:
           xcodebuild -version
           swift --version
 
+      - name: Select iOS simulator destination
+        run: |
+          ios_destination="$(
+            xcrun simctl list devices available -j | python3 -c '
+import json
+import sys
+
+payload = json.load(sys.stdin)
+devices = payload.get("devices", {})
+
+for runtime, runtime_devices in sorted(devices.items(), reverse=True):
+    if "iOS" not in runtime:
+        continue
+    for device in runtime_devices:
+        if device.get("isAvailable") and device.get("name", "").startswith("iPhone"):
+            print(f"platform=iOS Simulator,id={device[\"udid\"]}")
+            raise SystemExit(0)
+
+raise SystemExit(1)
+'
+          )"
+          if [ -z "$ios_destination" ]; then
+            echo "No available iPhone simulator found" >&2
+            exit 1
+          fi
+          echo "Using iOS simulator destination: $ios_destination"
+          echo "IOS_DESTINATION=$ios_destination" >> "$GITHUB_ENV"
+
       - name: Build for iOS Simulator
         run: |
           xcodebuild clean build \
             -project "$PROJECT_FILE" \
             -scheme "$IOS_SCHEME" \
-            -destination "platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}" \
+            -destination "$IOS_DESTINATION" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
 
@@ -80,7 +103,7 @@ jobs:
           xcodebuild test \
             -project "$PROJECT_FILE" \
             -scheme "$IOS_SCHEME" \
-            -destination "platform=iOS Simulator,name=iPhone 15,OS=${{ matrix.ios-version }}" \
+            -destination "$IOS_DESTINATION" \
             -testPlan "$TEST_PLAN" \
             -enableCodeCoverage YES \
             CODE_SIGN_IDENTITY="" \
@@ -91,14 +114,14 @@ jobs:
           xcodebuild clean build \
             -project "$PROJECT_FILE" \
             -scheme "$MACOS_SCHEME" \
-            -destination "platform=macOS,arch=x86_64" | xcpretty && exit ${PIPESTATUS[0]}
+            -destination "platform=macOS" | xcpretty && exit ${PIPESTATUS[0]}
 
       - name: Test macOS
         run: |
           xcodebuild test \
             -project "$PROJECT_FILE" \
             -scheme "$MACOS_SCHEME" \
-            -destination "platform=macOS,arch=x86_64" \
+            -destination "platform=macOS" \
             -testPlan "$TEST_PLAN" \
             -enableCodeCoverage YES | xcpretty && exit ${PIPESTATUS[0]}
 

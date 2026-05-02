@@ -22,9 +22,13 @@ let package = Package(
             path: "tictactoe Shared",
             exclude: [
                 "Assets.xcassets",
-                "GameScene.swift"
+                "GameScene.swift",
+                "MainMenuScene.swift"
             ],
-            sources: ["GameLogic.swift"]
+            sources: [
+                "GameLogic.swift",
+                "GamePersistence.swift"
+            ]
         ),
         .testTarget(
             name: "TicTacToeCoreTests",

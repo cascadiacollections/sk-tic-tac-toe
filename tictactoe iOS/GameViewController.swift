@@ -1,10 +1,16 @@
-import UIKit
+//
+//  GameViewController.swift
+//  tictactoe iOS
+//
+//  Created by Kevin T. Coughlin on 6/10/24.
+//
+
 import SpriteKit
+import UIKit
 import os
 
 @MainActor
 class GameViewController: UIViewController {
-
     private static let log = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
         category: "GameViewController"
@@ -21,12 +27,14 @@ class GameViewController: UIViewController {
         let viewSize = skView.bounds.size
         Self.log.debug("SKView bounds size: \(viewSize.width)x\(viewSize.height)")
 
-        guard let scene = GameScene(size: viewSize) else {
-            Self.log.error("Could not initialize GameScene")
-            let alert = UIAlertController(title: "Error", message: "Could not start the game.", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            present(alert, animated: true)
-            return
+        let scene: SKScene
+        if let persisted = GamePersistence.load(),
+           let restored = GameScene(size: viewSize, restoring: persisted) {
+            // Skip the main menu and drop the player straight back into their game.
+            Self.log.info("Restoring in-progress game — bypassing main menu")
+            scene = restored
+        } else {
+            scene = MainMenuScene(size: viewSize)
         }
 
         scene.scaleMode = .aspectFill
@@ -45,4 +53,3 @@ class GameViewController: UIViewController {
 
     override var prefersStatusBarHidden: Bool { true }
 }
-
