@@ -1,10 +1,16 @@
-import UIKit
+//
+//  GameViewController.swift
+//  tictactoe iOS
+//
+//  Created by Kevin T. Coughlin on 6/10/24.
+//
+
 import SpriteKit
+import UIKit
 import os
 
 @MainActor
 class GameViewController: UIViewController {
-
     private static let log = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
         category: "GameViewController"
@@ -47,4 +53,3 @@ class GameViewController: UIViewController {
 
     override var prefersStatusBarHidden: Bool { true }
 }
-

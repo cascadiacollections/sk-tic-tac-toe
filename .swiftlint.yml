@@ -1,5 +1,6 @@
 excluded:
   - Package.swift
+  - scripts/benchmark.swift
   - .build
   - Carthage
   - Pods

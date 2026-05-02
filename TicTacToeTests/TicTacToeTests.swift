@@ -5,6 +5,7 @@
 //  Created by Kevin T. Coughlin on 10/29/24.
 //
 
+import Foundation
 import Testing
 @testable import TicTacToeCore // Import the SPM module
 

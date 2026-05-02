@@ -1,10 +1,16 @@
+//
+//  GameViewController.swift
+//  tictactoe macOS
+//
+//  Created by Kevin T. Coughlin on 6/10/24.
+//
+
 import Cocoa
 import SpriteKit
 import os
 
 @MainActor
 class GameViewController: NSViewController {
-
     private static let log = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.cascadiacollections.tictactoe",
         category: "GameViewController"
@@ -41,4 +47,3 @@ class GameViewController: NSViewController {
         #endif
     }
 }
-
