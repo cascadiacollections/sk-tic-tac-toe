@@ -8,6 +8,11 @@ updates:
       day: "monday"
       time: "06:00"
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "github-actions"
@@ -28,6 +33,11 @@ updates:
       day: "monday"
       time: "06:30"
     open-pull-requests-limit: 5
+    groups:
+      swift:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "swift"
@@ -48,6 +58,11 @@ updates:
       day: "monday"
       time: "07:00"
     open-pull-requests-limit: 5
+    groups:
+      docker:
+        patterns: ["*"]
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "docker"
