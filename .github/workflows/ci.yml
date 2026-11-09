@@ -59,13 +59,7 @@ jobs:
 
       - name: Select iOS simulator destination
         run: |
-          ios_destination="$(
-            python3 -c "import json, subprocess, sys; devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j'], text=True)).get('devices', {}); runtimes = sorted(devices.items(), reverse=True); match = next((f\"platform=iOS Simulator,id={device['udid']}\" for runtime, runtime_devices in runtimes if 'iOS' in runtime for device in runtime_devices if device.get('isAvailable') and device.get('name', '').startswith('iPhone')), ''); print(match) if match else sys.exit(1)"
-          )"
-          if [ -z "$ios_destination" ]; then
-            echo "No available iPhone simulator found" >&2
-            exit 1
-          fi
+          ios_destination="$(scripts/ios-simulator-destination.sh)"
           echo "Using iOS simulator destination: $ios_destination"
           echo "IOS_DESTINATION=$ios_destination" >> "$GITHUB_ENV"
 

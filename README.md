@@ -152,7 +152,12 @@ Run tests using multiple methods:
 swift test
 
 # Command line with xcodebuild
-xcodebuild test -scheme "tictactoe iOS" -destination "platform=iOS Simulator,name=iPhone 15"
+# Find an available iPhone simulator (any one works):
+#   xcrun simctl list devices available | grep iPhone
+# or let the helper pick the newest one:
+#   scripts/ios-simulator-destination.sh
+xcodebuild test -scheme "tictactoe iOS" -destination "$(scripts/ios-simulator-destination.sh)"
+# or: make test-ios
 ```
 
 ### ⚡ Performance Benchmarking

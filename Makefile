@@ -1,5 +1,10 @@
 .PHONY: help setup build test clean lint format check install-tools ios macos coverage
 
+# iOS simulator destination: the newest available iPhone simulator, picked at
+# run time. Override with e.g. make test-ios IOS_DESTINATION="platform=iOS Simulator,name=iPhone 17"
+# Detected lazily (only by targets that use it) and at most once per make run.
+IOS_DESTINATION ?= $(eval IOS_DESTINATION := $$(shell scripts/ios-simulator-destination.sh))$(IOS_DESTINATION)
+
 # Default target
 help: ## Show this help message
 	@echo "TicTacToe Development Commands"
@@ -27,10 +32,11 @@ build: ## Build the project using Swift Package Manager
 
 build-ios: ## Build iOS target using xcodebuild
 	@echo "📱 Building iOS target..."
+	@test -n '$(IOS_DESTINATION)' || { echo "No available iPhone simulator found"; exit 1; }
 	@xcodebuild clean build \
 		-project tictactoe.xcodeproj \
 		-scheme "tictactoe iOS" \
-		-destination "platform=iOS Simulator,name=iPhone 15" \
+		-destination '$(IOS_DESTINATION)' \
 		CODE_SIGN_IDENTITY="" \
 		CODE_SIGNING_REQUIRED=NO
 
@@ -48,10 +54,11 @@ test: ## Run all tests using Swift Package Manager
 
 test-ios: ## Run iOS tests using xcodebuild
 	@echo "📱 Running iOS tests..."
+	@test -n '$(IOS_DESTINATION)' || { echo "No available iPhone simulator found"; exit 1; }
 	@xcodebuild test \
 		-project tictactoe.xcodeproj \
 		-scheme "tictactoe iOS" \
-		-destination "platform=iOS Simulator,name=iPhone 15" \
+		-destination '$(IOS_DESTINATION)' \
 		-testPlan "tictactoeTests" \
 		CODE_SIGN_IDENTITY="" \
 		CODE_SIGNING_REQUIRED=NO

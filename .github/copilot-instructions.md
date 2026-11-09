@@ -74,8 +74,8 @@ TicTacToeTests/          # Unit tests
 # Swift Package Manager
 swift build
 
-# Xcode iOS
-xcodebuild -project tictactoe.xcodeproj -scheme "tictactoe iOS" -destination "platform=iOS Simulator,name=iPhone 15"
+# Xcode iOS (any available iPhone simulator; list them with `xcrun simctl list devices available | grep iPhone`)
+xcodebuild -project tictactoe.xcodeproj -scheme "tictactoe iOS" -destination "$(scripts/ios-simulator-destination.sh)"
 
 # Xcode macOS
 xcodebuild -project tictactoe.xcodeproj -scheme "tictactoe macOS" -destination "platform=macOS"
