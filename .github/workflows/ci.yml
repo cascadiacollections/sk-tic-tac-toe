@@ -76,7 +76,7 @@ jobs:
             -scheme "$IOS_SCHEME" \
             -destination "$IOS_DESTINATION" \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
+            CODE_SIGNING_REQUIRED=NO | xcpretty && exit "${PIPESTATUS[0]}"
 
       - name: Build for macOS
         run: |
@@ -85,7 +85,7 @@ jobs:
             -scheme "$MACOS_SCHEME" \
             -destination "platform=macOS" \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
+            CODE_SIGNING_REQUIRED=NO | xcpretty && exit "${PIPESTATUS[0]}"
 
   build-spm:
     name: Swift Package Manager Build
@@ -112,3 +112,18 @@ jobs:
           else
             echo "No Package.swift found, skipping SPM build"
           fi
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: moderate
