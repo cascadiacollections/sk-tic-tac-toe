@@ -1,8 +1,7 @@
 # Swift SpriteKit Tic-Tac-Toe
 
 [![CI](https://github.com/cascadiacollections/sk-tic-tac-toe/actions/workflows/ci.yml/badge.svg)](https://github.com/cascadiacollections/sk-tic-tac-toe/actions/workflows/ci.yml)
-[![Security](https://github.com/cascadiacollections/sk-tic-tac-toe/actions/workflows/security.yml/badge.svg)](https://github.com/cascadiacollections/sk-tic-tac-toe/actions/workflows/security.yml)
-[![CodeQL](https://github.com/cascadiacollections/sk-tic-tac-toe/actions/workflows/security.yml/badge.svg?event=schedule)](https://github.com/cascadiacollections/sk-tic-tac-toe/actions/workflows/security.yml)
+[![CodeQL](https://github.com/cascadiacollections/sk-tic-tac-toe/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/cascadiacollections/sk-tic-tac-toe/actions/workflows/github-code-scanning/codeql)
 [![SwiftLint](https://img.shields.io/badge/SwiftLint-enabled-brightgreen.svg)](https://github.com/realm/SwiftLint)
 [![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)](https://swift.org)
 [![Platforms](https://img.shields.io/badge/Platforms-iOS%2017.0+%20|%20macOS%2014.0+-blue.svg)](https://developer.apple.com)
@@ -153,7 +152,12 @@ Run tests using multiple methods:
 swift test
 
 # Command line with xcodebuild
-xcodebuild test -scheme "tictactoe iOS" -destination "platform=iOS Simulator,name=iPhone 15"
+# Find an available iPhone simulator (any one works):
+#   xcrun simctl list devices available | grep iPhone
+# or let the helper pick the newest one:
+#   scripts/ios-simulator-destination.sh
+xcodebuild test -scheme "tictactoe iOS" -destination "$(scripts/ios-simulator-destination.sh)"
+# or: make test-ios
 ```
 
 ### ⚡ Performance Benchmarking
@@ -194,7 +198,7 @@ swift-format --in-place --recursive .
 The project includes comprehensive GitHub Actions workflows:
 
 - **CI Pipeline**: Multi-platform builds, testing, and code coverage
-- **Security Scanning**: CodeQL analysis and dependency review
+- **Security Scanning**: CodeQL default setup (Swift and Actions, extended queries) and dependency review on pull requests
 - **Quality Gates**: SwiftLint validation and formatting checks
 - **Matrix Testing**: Multiple Xcode and Swift versions
 - **Automated Updates**: Dependabot for dependency management

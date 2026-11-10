@@ -74,8 +74,8 @@ TicTacToeTests/          # Unit tests
 # Swift Package Manager
 swift build
 
-# Xcode iOS
-xcodebuild -project tictactoe.xcodeproj -scheme "tictactoe iOS" -destination "platform=iOS Simulator,name=iPhone 15"
+# Xcode iOS (any available iPhone simulator; list them with `xcrun simctl list devices available | grep iPhone`)
+xcodebuild -project tictactoe.xcodeproj -scheme "tictactoe iOS" -destination "$(scripts/ios-simulator-destination.sh)"
 
 # Xcode macOS
 xcodebuild -project tictactoe.xcodeproj -scheme "tictactoe macOS" -destination "platform=macOS"
@@ -168,8 +168,8 @@ struct GameLogicTests {
 ## CI/CD Integration
 
 ### GitHub Actions Workflows
-- **ci.yml**: Multi-platform builds, tests, and coverage
-- **security.yml**: CodeQL analysis and security scanning
+- **ci.yml**: Multi-platform builds, tests, coverage, and dependency review on pull requests
+- **CodeQL**: GitHub code scanning default setup (Swift and Actions), configured in repository settings
 
 ### Pre-commit Checks
 The DevContainer includes Git hooks for:

@@ -144,7 +144,11 @@ swift-format --in-place --recursive .
 swift test  # or ⌘+U in Xcode
 
 # Verify build on both platforms
-xcodebuild build -scheme "tictactoe iOS" -destination "platform=iOS Simulator,name=iPhone 15"
+# Find an available iPhone simulator (any one works):
+#   xcrun simctl list devices available | grep iPhone
+# or let the helper pick the newest one:
+#   scripts/ios-simulator-destination.sh
+xcodebuild build -scheme "tictactoe iOS" -destination "$(scripts/ios-simulator-destination.sh)"
 xcodebuild build -scheme "tictactoe macOS" -destination "platform=macOS"
 ```
 
@@ -160,7 +164,8 @@ swift test
 
 # Xcode (⌘+U)
 # Or via command line:
-xcodebuild test -scheme "tictactoe iOS" -destination "platform=iOS Simulator,name=iPhone 15" -testPlan "tictactoeTests"
+# Any available iPhone simulator works (xcrun simctl list devices available | grep iPhone)
+xcodebuild test -scheme "tictactoe iOS" -destination "$(scripts/ios-simulator-destination.sh)" -testPlan "tictactoeTests"
 ```
 
 ### Test Requirements

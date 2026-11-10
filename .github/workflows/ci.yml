@@ -59,13 +59,7 @@ jobs:
 
       - name: Select iOS simulator destination
         run: |
-          ios_destination="$(
-            python3 -c "import json, subprocess, sys; devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j'], text=True)).get('devices', {}); runtimes = sorted(devices.items(), reverse=True); match = next((f\"platform=iOS Simulator,id={device['udid']}\" for runtime, runtime_devices in runtimes if 'iOS' in runtime for device in runtime_devices if device.get('isAvailable') and device.get('name', '').startswith('iPhone')), ''); print(match) if match else sys.exit(1)"
-          )"
-          if [ -z "$ios_destination" ]; then
-            echo "No available iPhone simulator found" >&2
-            exit 1
-          fi
+          ios_destination="$(scripts/ios-simulator-destination.sh)"
           echo "Using iOS simulator destination: $ios_destination"
           echo "IOS_DESTINATION=$ios_destination" >> "$GITHUB_ENV"
 
@@ -76,7 +70,7 @@ jobs:
             -scheme "$IOS_SCHEME" \
             -destination "$IOS_DESTINATION" \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
+            CODE_SIGNING_REQUIRED=NO | xcpretty && exit "${PIPESTATUS[0]}"
 
       - name: Build for macOS
         run: |
@@ -85,7 +79,7 @@ jobs:
             -scheme "$MACOS_SCHEME" \
             -destination "platform=macOS" \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO | xcpretty && exit ${PIPESTATUS[0]}
+            CODE_SIGNING_REQUIRED=NO | xcpretty && exit "${PIPESTATUS[0]}"
 
   build-spm:
     name: Swift Package Manager Build
@@ -112,3 +106,18 @@ jobs:
           else
             echo "No Package.swift found, skipping SPM build"
           fi
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: moderate
